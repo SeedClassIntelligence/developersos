@@ -1,7 +1,7 @@
 # DeveloperOS Master Gate Inventory
 
 **Inventory date:** 2026-10-07  
-**Current position:** DEVOS-DI-1 implemented (66/66); DI1-D1 remediated (6/6, database-enforced partner integrity; EF-2 fixture corrected); awaiting independent acceptance. DI-2 not started.  
+**Current position:** DEVOS-DI-1 **ACCEPTED and FROZEN** (independent review, after DI1-D1 remediation at `8bc4e3a`). DI-2 contract/RED gate in preparation; DI-2 implementation **not authorized**.  
 **Current disposition:** EF-0, EF-1, EF-2, EF-3 **ACCEPTED**. EF-3 accepted by independent review after remediation (PR #1, merge `ca69d64`). EF-3 is **frozen**: no further audit-ledger functionality without a new authorization.  
 **Execution hold:** No post-EF-3 phase is defined in the canonical source; deployment and merge are not authorized.
 
@@ -26,7 +26,12 @@ This is the living phase ledger for the canonical DeveloperOS source. A checked 
 ## Current count
 
 - **3 named EF phases total — 3 accepted** (EF-1, EF-2, EF-3; EF-0 baseline accepted)
-- **DEVOS-DI-1 — Development Intelligence Foundation:** RED gate accepted at `31e6f0f` (63 RED / 3 GREEN). **Implemented: DI-1 66/66 GREEN; protected aggregate 173/173; total 239/239 from an empty cluster.** Evidence: `docs/DEVOS-DI1-COMPLETION-EVIDENCE-REPORT.md`. **Awaiting independent acceptance; DI-2 not authorized.**
+- [x] **DEVOS-DI-1 — Development Intelligence Foundation** — ACCEPTED, FROZEN
+  - RED gate accepted at `31e6f0f` (63 RED / 3 GREEN); implemented at `e93fe5a`; review NO-GO on DI1-D1 (execution partner integrity API-only); remediated at `8bc4e3a` (EF-2 fixture corrected; migration 007 composite FKs).
+  - Accepted evidence: protected 173/173, DI-1 66/66, DI1-D1 6/6 — **245/245** from an empty cluster; GitHub Actions run #9 success on PostgreSQL 18.6.
+  - Evidence: `docs/DEVOS-DI1-COMPLETION-EVIDENCE-REPORT.md`, `docs/DEVOS-DI1-D1-REMEDIATION-ADDENDUM.md`.
+  - **Frozen:** migrations `006`/`007`, `intelligence/engine.js`, `intelligence/readiness.js`, `intelligence/rule-registry.json`, `db/repositories/di.repo.js`, `db/repositories/findings.repo.js`, `middleware/references.js`. Digests are pinned by the DI-2 gate (`DEVOS-DI2-DI1-FROZEN-001`). A later phase that finds a defect in them stops and classifies it rather than modifying them.
+- [ ] **DEVOS-DI-2 — Policy & Gate Engine** — contract and RED gate in preparation; implementation not authorized.
 
 ## Required next decision and next execution sequence
 
@@ -42,7 +47,8 @@ This is the living phase ledger for the canonical DeveloperOS source. A checked 
 10. [x] DI-1 implemented: 66/66 GREEN, no regression.
 11. [x] DI-1 review: NO-GO on DI1-D1 (execution partner integrity API-only; EF-2 fixture held a cross-tenant row).
 12. [x] DI1-D1 remediated: fixture corrected, migration 007 composite FKs, 6/6 database tests; aggregate 245/245.
-13. [ ] Independent acceptance of DI-1; freeze.
+13. [x] DI-1 ACCEPTED and FROZEN.
+14. [ ] DI-2 acceptance contract and RED gate; independent review; implementation authorization.
 
 ## Separate readiness items — not part of the EF-2 completion claim
 
