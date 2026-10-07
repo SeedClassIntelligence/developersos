@@ -31,7 +31,7 @@
 
 - RED baseline, run against the unremediated ledger on a freshly created database: `docs/evidence/ef3-red-baseline.txt` (committed in `b94dd9c` *before* any remediation code).
 - GREEN aggregate, from an empty PostgreSQL cluster (`rm -rf .pgdata` → `initdb` → migrations → seed → gate): `docs/evidence/gate-local-green.txt`.
-- GitHub Actions: see §13.
+- GitHub Actions run #1 on `77f44c0`: **success, 173/173 on PostgreSQL 18.6** (§13).
 
 No P0 condition remains open (§14 lists the remaining non-P0 limitations).
 
@@ -293,9 +293,32 @@ The 11 original tests remain and all pass. Two assertions changed because the re
 
 ## 13. GitHub Actions result
 
-See the *DeveloperOS Gate* workflow run for the head commit of `claude/nice-fermat-5jwzsr` on GitHub. The run outcome is recorded in the commit that follows this report (§15).
+**Run #1:** https://github.com/SeedClassIntelligence/developersos/actions/runs/37680719011
+- Commit `77f44c0`, event `push`, conclusion **success**.
+- Service: `postgres:18` → **PostgreSQL 18.6**. The empty-database preflight passed (0 `developeros*` databases).
+- `npm run test:gate` reproduced the local results independently:
 
----
+```
+0. DEVOS-CLEAN-DB GATE     : 5/5 PASSED  [GREEN — EMPTY DB BOOTSTRAP VERIFIED]
+1. DEVOS-V1-REGRESSION     : 55/55 PASSED
+2. DEVOS-GOLDEN-001        : 15/15 PASSED
+3. DEVOS-SEC-KNOWN-DEBT    : 3/3 PASSED  [P0 SENTINELS ENFORCED]
+4. DEVOS-EF-1 ACCEPTANCE   : 13/13 PASSED
+5. DEVOS-EF-2 ACCEPTANCE   : 29/29 PASSED
+6. DEVOS-GOLDEN-SEC-001    : 15/15 PASSED
+7. DEVOS-EF-3 ACCEPTANCE   : 38/38 PASSED  (original 11/11, adversarial 27/27)
+```
+
+The PostgreSQL service log in the same run shows the attacks executing server-side and being rejected for the intended reasons:
+- `permission denied for table audit_events` (UPDATE/DELETE/TRUNCATE/INSERT as `devos_app_test`)
+- `must be owner of table audit_events` (DISABLE TRIGGER)
+- `permission denied to set parameter "session_replication_role"`
+- `audit_events cannot be truncated` (owner)
+- `audit chain head may only advance by exactly one position`
+- `duplicate key value violates unique constraint "audit_events_chain_position"`
+- `checkpoint does not reference a ledger event`
+
+Every later push to the branch runs the same workflow. The run for the head commit is authoritative.
 
 ## 14. Remaining limitations and security debt (no P0 open)
 
