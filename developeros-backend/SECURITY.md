@@ -135,7 +135,7 @@ server {
 ## Architecture Status
 - **Phase EF-1 (PostgreSQL Relational Persistence)**: COMPLETE. Active PostgreSQL engine with 15 relational tables, exact monetary precision `numeric(15,2)`, and foreign key constraints.
 - **Phase EF-2 (Multi-Tenant Authorization & RBAC)**: COMPLETE. PostgreSQL-backed roles, permissions, dynamic membership resolution, tenant-scoped resource isolation, and invitation workflows.
-- **Phase EF-3 (Audit Ledger & Compliance Trail)**: REMEDIATED — PENDING INDEPENDENT ACCEPTANCE. Independent review rejected the original 11/11 evidence (defects EF3-D1…D5). Remediation: owner/runtime role separation enforced at startup, single canonical hash_version 2 algorithm shared by capture and verification, per-tenant `chain_seq` with protected chain heads, timezone-independent hashing, Ed25519-signed checkpoint receipts, and request-ID hardening. Evidence and remaining limitations: `docs/DEVOS-EF3-REMEDIATION-EVIDENCE-REPORT.md`.
+- **Phase EF-3 (Audit Ledger & Compliance Trail)**: ACCEPTED after remediation (PR #1). Owner/runtime role separation, canonical hash_version 2 shared by capture and verification, per-tenant `chain_seq` with protected heads, timezone-independent hashing, Ed25519-signed checkpoint receipts, request-ID hardening. Evidence: `docs/DEVOS-EF3-REMEDIATION-EVIDENCE-REPORT.md`.
 
 ### Phase 3: Full audit trail
 Every data change logged with: who, what, when, from what IP.

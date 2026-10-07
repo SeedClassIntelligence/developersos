@@ -10,7 +10,7 @@
 | EF-0 | ACCEPTED |
 | EF-1 | ACCEPTED |
 | EF-2 | ACCEPTED |
-| EF-3 | NO-GO → **remediated, awaiting independent acceptance** |
+| EF-3 | NO-GO → remediated → **ACCEPTED** by independent review (PR #1, merge `ca69d64`); frozen |
 
 ---
 
