@@ -1,0 +1,190 @@
+{
+  "title": "DEVOS-DI-2 RED gate \u2014 expected state per test, written BEFORE the first run",
+  "baselineCommit": "7e46306",
+  "tests": {
+    "DEVOS-DI2-SCHEMA-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-007": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-008": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-009": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-010": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-011": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 permissions not in the EF-2 catalog (platform-admin row matches only vacuously)"
+    },
+    "DEVOS-DI2-DI1-FROZEN-001": {
+      "expected": "GREEN",
+      "reason": "EXISTING / FREEZE GUARD \u2014 DI-1 artifacts byte-identical to the accepted release; must stay GREEN through DI-2"
+    },
+    "DEVOS-DI2-EF3-FROZEN-001": {
+      "expected": "GREEN",
+      "reason": "EXISTING / FREEZE GUARD \u2014 EF-3 artifacts byte-identical to the accepted release"
+    },
+    "DEVOS-DI2-POL-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-POL-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-POL-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-POL-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-POL-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-POL-006": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-CAND-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-CAND-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-CAND-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-006": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-007": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-008": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-QUAL-009": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-DETERMINISM-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-TENANT-POLICY-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-INFORMATION-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-IMMUTABLE-POLICY-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-NO-PLATFORM-POLICY-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-ADV-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-ADV-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-ADV-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-ADV-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-ADV-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-ADV-006": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-AUTHZ-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-AUDIT-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+    },
+    "DEVOS-DI2-AUDIT-002": {
+      "expected": "GREEN",
+      "reason": "EXISTING CAPABILITY \u2014 EF-3 chains of the fixture tenants verify today; must stay GREEN"
+    },
+    "DEVOS-DI2-BOUNDARY-001": {
+      "expected": "GREEN",
+      "reason": "BOUNDARY GUARD \u2014 no promotion/underwriting/committee/override surface exists (opportunity readable as precondition); must stay GREEN"
+    },
+    "DEVOS-DI2-SCHEMA-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-006": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    }
+  }
+}

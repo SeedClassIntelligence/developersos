@@ -14,14 +14,16 @@ const { runGoldenSecurityPath } = require('./devos-golden-sec-001.test');
 const { runEF3AcceptanceSuite } = require('./devos-ef3-acceptance.test');
 const { runDI1AcceptanceSuite } = require('./devos-di1-acceptance.test');
 const { runDI1D1Suite } = require('./devos-di1-d1-partner-integrity.test');
+const { runDI2AcceptanceSuite } = require('./devos-di2-acceptance.test');
+const DI2_BASELINE = require('./fixtures/di2-red-baseline.json');
 const DI1_BASELINE = require('./fixtures/di1-red-baseline.json');
 
 // DI-1 is gated against its recorded baseline: every test must be in the state
 // the baseline records. An unexpected GREEN, an unexpected RED (regression) or a
 // test missing from either side fails the gate. Implementation flips entries
 // to GREEN as capabilities land; nothing drifts silently.
-function compareDI1Baseline(res) {
-  const expected = DI1_BASELINE.tests;
+function compareDI1Baseline(res, baseline = DI1_BASELINE) {
+  const expected = baseline.tests;
   const seen = new Set();
   const unexpectedGreen = [];
   const unexpectedRed = [];
@@ -54,6 +56,7 @@ async function main() {
   let ef3Res = null;
   let di1Res = null;
   let di1d1Res = null;
+  let di2Res = null;
 
   try {
     // Must run first: it is the first caller of ensureTestDatabase() in the
@@ -88,6 +91,10 @@ async function main() {
     }
     if (target === 'di1-d1' || target === 'all') {
       di1d1Res = await runDI1D1Suite();
+    }
+    if (target === 'di2' || target === 'all') {
+      di2Res = await runDI2AcceptanceSuite();
+      di2Res.baseline = compareDI1Baseline(di2Res, DI2_BASELINE);
     }
   } finally {
     await stopTestServer();
@@ -149,6 +156,16 @@ async function main() {
     const statusLabel = di1d1Res.failedCount === 0 ? '[GREEN — DATABASE-ENFORCED]' : `[${di1d1Res.failedCount} FAILED]`;
     console.log(`  9. DEVOS-DI1-D1 PARTNER   : ${di1d1Res.passedCount}/${di1d1Res.total} PASSED  ${statusLabel}`);
   }
+  if (di2Res) {
+    const b = di2Res.baseline;
+    const expRed = Object.values(DI2_BASELINE.tests).filter(t => t.expected === 'RED').length;
+    const statusLabel = b.mismatches > 0 ? `[${b.mismatches} BASELINE MISMATCH]`
+      : expRed === 0 ? '[GREEN — matches baseline, no expected RED]' : `[LOCKED — matches baseline: ${expRed} expected RED]`;
+    console.log(`  10. DEVOS-DI-2 ACCEPTANCE : ${di2Res.passedCount}/${di2Res.total} GREEN  ${statusLabel}`);
+    if (b.unexpectedGreen.length) console.log(`       unexpected GREEN    : ${b.unexpectedGreen.join(', ')}`);
+    if (b.unexpectedRed.length) console.log(`       unexpected RED      : ${b.unexpectedRed.join(', ')}`);
+    if (b.notRun.length) console.log(`       not run             : ${b.notRun.join(', ')}`);
+  }
   console.log('===============================================================\n');
   const failed =
     (cleanDbRes && cleanDbRes.failedCount > 0) ||
@@ -160,7 +177,8 @@ async function main() {
     (goldenSecurityRes && goldenSecurityRes.failedCount > 0) ||
     (ef3Res && ef3Res.failedCount > 0) ||
     (di1Res && di1Res.baseline.mismatches > 0) ||
-    (di1d1Res && di1d1Res.failedCount > 0);
+    (di1d1Res && di1d1Res.failedCount > 0) ||
+    (di2Res && di2Res.baseline.mismatches > 0);
   process.exit(failed ? 1 : 0);
 }
 

@@ -18,6 +18,7 @@
     "test:golden-security": "node tests/runner.js golden-security",
     "test:ef3": "node tests/runner.js ef3",
     "test:di1": "node tests/runner.js di1",
+    "test:di2": "node tests/runner.js di2",
     "check": "node scripts/check-js.js",
     "build": "npm run check",
     "test:gate": "npm run check && node tests/runner.js all"
