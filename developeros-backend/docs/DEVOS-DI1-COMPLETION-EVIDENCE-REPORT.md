@@ -267,7 +267,7 @@ Not implemented, as required: the DI-2 Policy & Gate Engine, Development Policy 
 ## 15. Clean-database and CI
 
 - **Clean database:** gate 0 is 5/5 from a cluster that didn't exist before the run; migrations 001–006 applied in order (`docs/evidence/di1-completion-gate-run.txt`).
-- **GitHub Actions:** the *DeveloperOS Gate* workflow runs the identical gate on an empty `postgres:18` service for this push. The run is recorded in the commit that follows this report.
+- **GitHub Actions run #7:** https://github.com/SeedClassIntelligence/developersos/actions/runs/37689739937 on `e93fe5a`, conclusion **success**, on an empty `postgres:18` service (PostgreSQL 18.6). The gate fails on any baseline mismatch, so success means 239/239 with DI-1 at 66/66. The service log from the same run shows the DI-1 database protections firing server-side by name: `di_opportunities_property_same_tenant`, `di_opportunities_relationship_same_tenant`, `di_site_facts_same_tenant`, `di_status_history_same_tenant` and `intelligence_finding_events_same_tenant` (cross-tenant probes); `di_opportunities_status_check` rejecting GO, NO-GO and HOLD; `intelligence_findings_one_active`; and the four durable-history delete triggers.
 
 ---
 
