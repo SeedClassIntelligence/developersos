@@ -1,0 +1,95 @@
+# DeveloperOS authoritative gate.
+#
+# Provisions an empty PostgreSQL server, then runs the complete gate from
+# scratch: the harness drops/creates the test database, applies every
+# migration as the owner role, provisions the unprivileged runtime role,
+# seeds the canonical fixture, and runs every protected suite, including the
+# EF-3 adversarial ledger tests. Any failed test or bootstrap error fails the
+# job. No secrets are used: credentials below exist only inside this job's
+# throwaway service container, and JWT/signing keys are generated per run.
+name: DeveloperOS Gate
+
+on:
+  push:
+    paths:
+      - 'developeros-backend/**'
+      - '.github/workflows/developeros-gate.yml'
+  pull_request:
+    paths:
+      - 'developeros-backend/**'
+      - '.github/workflows/developeros-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: developeros-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Clean-database gate (PostgreSQL 18)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    defaults:
+      run:
+        working-directory: developeros-backend
+
+    env:
+      NODE_ENV: test
+      # Owner/migration role of the throwaway service container. The harness
+      # derives an isolated *_test database and a separate runtime role.
+      MIGRATION_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/developeros
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: developeros-backend/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Generate per-run JWT secret
+        run: |
+          secret=$(node -e "console.log(require('crypto').randomBytes(48).toString('hex'))")
+          echo "::add-mask::$secret"
+          echo "JWT_SECRET=$secret" >> "$GITHUB_ENV"
+
+      - name: Confirm PostgreSQL starts empty
+        run: |
+          node -e "
+            const { Client } = require('pg');
+            (async () => {
+              const c = new Client({ connectionString: 'postgresql://postgres:postgres@127.0.0.1:5432/postgres' });
+              await c.connect();
+              const { rows } = await c.query(\"SELECT datname FROM pg_database WHERE datname LIKE 'developeros%'\");
+              const { rows: v } = await c.query('SHOW server_version');
+              await c.end();
+              console.log('PostgreSQL', v[0].server_version, '- DeveloperOS databases present:', rows.length);
+              if (rows.length) process.exit(1);
+            })().catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Run authoritative gate (clean DB → migrations → seed → all suites)
+        run: npm run test:gate
