@@ -1,5 +1,6 @@
 const { startTestServer, stopTestServer, apiRequest, loginAs } = require('./helpers');
 const { query, transaction } = require('../db/pool');
+const { runEF3AdversarialTests } = require('./devos-ef3-adversarial.test');
 
 async function runEF3AcceptanceSuite() {
   console.log('\nDEVOS-EF-3 ACCEPTANCE — AUDIT LEDGER & COMPLIANCE TRAIL');
@@ -93,10 +94,21 @@ async function runEF3AcceptanceSuite() {
   record('DEVOS-EF3-HASH-001', 'Stored event hashes recompute from canonical event fields', digestCheck.rows[0].invalid === 0,
     `${digestCheck.rows[0].invalid} invalid hashes`);
 
+  const originalCount = results.length;
+  await runEF3AdversarialTests(record);
+
   const passedCount = results.filter(r => r.passed).length;
   const redCount = results.length - passedCount;
+  const original = results.slice(0, originalCount);
+  const adversarial = results.slice(originalCount);
+  const breakdown = {
+    original: { passed: original.filter(r => r.passed).length, total: original.length },
+    adversarial: { passed: adversarial.filter(r => r.passed).length, total: adversarial.length },
+  };
+  console.log(`DEVOS-EF-3 ORIGINAL ACCEPTANCE: ${breakdown.original.passed}/${breakdown.original.total} PASSED`);
+  console.log(`DEVOS-EF-3 ADVERSARIAL REGRESSION: ${breakdown.adversarial.passed}/${breakdown.adversarial.total} PASSED`);
   console.log(`DEVOS-EF-3 ACCEPTANCE SUMMARY: ${passedCount}/${results.length} PASSED`);
-  return { passedCount, redCount, failedCount: redCount, total: results.length, results };
+  return { passedCount, redCount, failedCount: redCount, total: results.length, results, breakdown };
 }
 
 if (require.main === module) runEF3AcceptanceSuite().then(r => stopTestServer().then(() => process.exit(r.failedCount ? 1 : 0)));
