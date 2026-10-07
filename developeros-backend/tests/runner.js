@@ -13,6 +13,7 @@ const { runEF2AcceptanceSuite } = require('./devos-ef2-acceptance.test');
 const { runGoldenSecurityPath } = require('./devos-golden-sec-001.test');
 const { runEF3AcceptanceSuite } = require('./devos-ef3-acceptance.test');
 const { runDI1AcceptanceSuite } = require('./devos-di1-acceptance.test');
+const { runDI1D1Suite } = require('./devos-di1-d1-partner-integrity.test');
 const DI1_BASELINE = require('./fixtures/di1-red-baseline.json');
 
 // DI-1 is gated against its recorded baseline: every test must be in the state
@@ -52,6 +53,7 @@ async function main() {
   let goldenSecurityRes = null;
   let ef3Res = null;
   let di1Res = null;
+  let di1d1Res = null;
 
   try {
     // Must run first: it is the first caller of ensureTestDatabase() in the
@@ -83,6 +85,9 @@ async function main() {
     if (target === 'di1' || target === 'all') {
       di1Res = await runDI1AcceptanceSuite();
       di1Res.baseline = compareDI1Baseline(di1Res);
+    }
+    if (target === 'di1-d1' || target === 'all') {
+      di1d1Res = await runDI1D1Suite();
     }
   } finally {
     await stopTestServer();
@@ -140,6 +145,10 @@ async function main() {
     if (b.unexpectedRed.length) console.log(`       unexpected RED      : ${b.unexpectedRed.join(', ')}`);
     if (b.notRun.length) console.log(`       not run             : ${b.notRun.join(', ')}`);
   }
+  if (di1d1Res) {
+    const statusLabel = di1d1Res.failedCount === 0 ? '[GREEN — DATABASE-ENFORCED]' : `[${di1d1Res.failedCount} FAILED]`;
+    console.log(`  9. DEVOS-DI1-D1 PARTNER   : ${di1d1Res.passedCount}/${di1d1Res.total} PASSED  ${statusLabel}`);
+  }
   console.log('===============================================================\n');
   const failed =
     (cleanDbRes && cleanDbRes.failedCount > 0) ||
@@ -150,7 +159,8 @@ async function main() {
     (ef2Res && ef2Res.redCount > 0) ||
     (goldenSecurityRes && goldenSecurityRes.failedCount > 0) ||
     (ef3Res && ef3Res.failedCount > 0) ||
-    (di1Res && di1Res.baseline.mismatches > 0);
+    (di1Res && di1Res.baseline.mismatches > 0) ||
+    (di1d1Res && di1d1Res.failedCount > 0);
   process.exit(failed ? 1 : 0);
 }
 

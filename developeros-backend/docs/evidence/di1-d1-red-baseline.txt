@@ -1,0 +1,9 @@
+# DEVOS-DI1-D1 RED baseline — run against bdb9f6d (unremediated), runtime role probes
+  [FAIL] DEVOS-DI1-D1-DB-TASK-001 — Direct SQL: a task cannot reference another organization's partner (23503); same-tenant partner accepted :: {"controlOk":true,"rejected":false}
+  [FAIL] DEVOS-DI1-D1-DB-CONTRACT-001 — Direct SQL: a contract cannot reference another organization's partner (23503); same-tenant partner accepted :: {"controlOk":true,"rejected":false}
+  [FAIL] DEVOS-DI1-D1-DB-UPDATE-001 — Direct SQL: re-pointing an existing task or contract at a foreign partner is rejected (23503) :: {"task":{"controlOk":true,"rejected":false},"contract":{"controlOk":true,"rejected":false}}
+  [FAIL] DEVOS-DI1-D1-DB-FORGE-001 — Direct SQL: forging the row's tenant to match a foreign partner is rejected by the project ownership key (23503) :: {"task":{"controlOk":true,"rejected":true,"code":"42703","constraint":null,"message":"column \"organization_id\" of relation \"tasks\" does not exist"},"contract":{"controlOk":true,"rejected":true,"code":"42703","constraint":null,"message":"column \"organization_id\" of relation \"contracts\" does not exist"}}
+  [FAIL] DEVOS-DI1-D1-DB-MOVE-001 — Direct SQL: moving a project to another organization while its tasks use the old tenant's partner is rejected (23503) :: {"controlOk":true,"rejected":false}
+  [FAIL] DEVOS-DI1-D1-EF2-FIXTURE-001 — EF-2 Tenant B contract references a Tenant B partner (corrected fixture) :: {"contractPartner":"part1","fixturePartner":null,"projectOrg":"org2"}
+DEVOS-DI1-D1 SUMMARY: 0 PASSED, 6 FAILED (Total: 6)
+                   MASTER GATE STATUS SUMMARY                  
