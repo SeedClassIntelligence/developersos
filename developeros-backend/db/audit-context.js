@@ -3,9 +3,21 @@ const { randomUUID } = require('crypto');
 
 const storage = new AsyncLocalStorage();
 
+// EF3-D5: X-Request-Id is untrusted correlation metadata. Anything outside
+// this pattern is replaced with a server-generated ID, so the header can never
+// overflow the audit column or fail an audited write. It is never used as
+// identity or authority.
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+
+function resolveRequestId(header) {
+  return typeof header === 'string' && REQUEST_ID_PATTERN.test(header) ? header : randomUUID();
+}
+
 function middleware(req, res, next) {
+  const requestId = resolveRequestId(req.get('X-Request-Id'));
+  res.setHeader('X-Request-Id', requestId);
   storage.run({
-    requestId: req.get('X-Request-Id') || randomUUID(),
+    requestId,
     actorUserId: null,
     organizationId: null,
   }, next);
@@ -29,4 +41,4 @@ async function applyToClient(client) {
   ]);
 }
 
-module.exports = { middleware, update, current, applyToClient };
+module.exports = { middleware, update, current, applyToClient, resolveRequestId, REQUEST_ID_PATTERN };

@@ -34,9 +34,9 @@ async function startTestServer(port = 3005, reseed = true) {
   process.env.HOST = '127.0.0.1';
   
   // Require server
-  const { server } = require('../server');
+  const { server, ready } = require('../server');
   serverInstance = server;
-  await new Promise(resolve => setTimeout(resolve, 200));
+  await ready;
   return { server: serverInstance, port: serverPort };
 }
 

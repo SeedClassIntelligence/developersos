@@ -1,0 +1,33 @@
+# EF-3 RED baseline — run against unremediated commit b579a24 on a freshly created database
+# Command: drop developeros_test, then node tests/runner.js ef3
+[FRESH] dropped developeros_test
+[TEST-ENV] Created isolated test database "developeros_test"
+[PASS] DEVOS-EF3-ATOMIC-001: Successful business mutation commits audit evidence in the same database operation
+[PASS] DEVOS-EF3-ACTOR-001: Audit evidence records current actor, organization, request, entity and operation
+[PASS] DEVOS-EF3-READ-001: Authorized organization administrator can read only the active tenant ledger
+[PASS] DEVOS-EF3-TENANT-001: Tenant ledger never discloses another organization audit event
+[PASS] DEVOS-EF3-AUTHZ-001: Caller without audit:read cannot inspect compliance evidence
+[PASS] DEVOS-EF3-CHAIN-001: Tenant audit chain linkage verifies successfully
+[PASS] DEVOS-EF3-CONCURRENCY-001: Concurrent tenant mutations serialize into one valid hash chain without losing events
+[PASS] DEVOS-EF3-APPEND-001: Committed audit evidence cannot be updated or deleted through the application database role
+[PASS] DEVOS-EF3-ROLLBACK-001: Failed transaction leaves neither business state nor orphan audit evidence
+[PASS] DEVOS-EF3-SECRET-001: Audit snapshots redact password and invitation token hashes
+[PASS] DEVOS-EF3-HASH-001: Stored event hashes recompute from canonical event fields
+--- EF-3 ADVERSARIAL REGRESSION (EF3-D1 … EF3-D5) ---
+[FAIL] DEVOS-EF3-D1-ROLE-001: Runtime database role is not superuser, not ledger owner, and holds no role-admin/replication/RLS-bypass attributes — {"role":"postgres","rolsuper":true,"rolcreaterole":true,"rolcreatedb":true,"rolreplication":true,"rolbypassrls":true,"owns_ledger":true}
+[PASS] DEVOS-EF3-D1-UPDATE-001: Runtime role cannot UPDATE audit_events
+[PASS] DEVOS-EF3-D1-DELETE-001: Runtime role cannot DELETE from audit_events
+[FAIL] DEVOS-EF3-D1-TRUNCATE-001: Runtime role cannot TRUNCATE audit_events — TRUNCATE succeeded (rolled back)
+[FAIL] DEVOS-EF3-D1-TRIGGER-001: Runtime role cannot disable, drop, or replace the ledger protection trigger — disable: ALLOWED; drop: ALLOWED; replace: ALLOWED
+[FAIL] DEVOS-EF3-D1-REPLICA-001: Runtime role cannot suppress triggers via session_replication_role — replica-mode UPDATE succeeded
+[FAIL] DEVOS-EF3-D1-FORGE-001: Runtime role cannot insert forged audit events directly — forged INSERT succeeded
+[FAIL] DEVOS-EF3-D2-TAMPER-001: Product /api/audit/verify detects content tampering when the stored hash is left unchanged — {"valid":true,"count":7,"headHash":"da221d59852b03a9855df9636b1efd22a470e0b35074ded85813ec7d8f50c3c5"}
+[FAIL] DEVOS-EF3-D2-TAMPER-002: Product verification detects tampering of attribution metadata (actor) — {"valid":true,"count":7,"headHash":"c707a9a010a322d1be5d0eb674b2a864e510d1322a4c8506beb22f5d97115fdb"}
+[FAIL] DEVOS-EF3-D3-MIDDLE-001: Product verification detects deletion of a middle event as a sequence gap — {"valid":false,"count":6,"failedEventId":"fec0d4aa-3c45-4a91-bdc9-898135fd1551"}
+[FAIL] DEVOS-EF3-D3-TAIL-001: Product verification detects deletion of the newest event (tail truncation) — {"valid":true,"count":6,"headHash":"b613e235b5d1ed954e67fbcdf92f89d74975fdde617b348361645f16dd5c8bbb"}
+[FAIL] DEVOS-EF3-D4-TIMEZONE-001: Ledger hashes recompute and verify identically from UTC, America/Chicago, Asia/Kolkata and Pacific/Chatham sessions — [{"zone":"UTC","valid":true,"count":6,"head":"52ed1fb28c525c7532bc46ad3aa938b7092244aa0de9256629e18ea8eb206c82","invalid":1},{"zone":"America/Chicago","valid":true,"count":6,"head":"52ed1fb28c525c7532bc46ad3aa938b7092244aa0de9256629e18ea8eb206c82","invalid":6},{"zone":"Asia/Kolkata","valid":true,"count":6,"head":"52ed1fb28c525c7532bc46ad3aa938b7092244aa0de9256629e18ea8eb206c82","invalid":6},{"zone":"Pacific/Chatham","valid":true,"count":6,"head":"52ed1fb28c525c7532bc46ad3aa938b7092244aa0de9256629e18ea8eb206c82","invalid":6}]
+[FAIL] DEVOS-EF3-D5-REQUESTID-001: Oversized/malformed X-Request-Id is replaced server-side and never breaks an audited write; valid IDs are preserved — [{"label":"oversized","status":500,"ok":false},{"label":"malformed","status":201,"recorded":"bad id; DROP TABLE audit_events","ok":false},{"label":"valid","status":201,"recorded":"ef3-corr.ID_01","ok":false}]
+DEVOS-EF-3 ORIGINAL ACCEPTANCE: 11/11 PASSED
+DEVOS-EF-3 ADVERSARIAL REGRESSION: 2/13 PASSED
+DEVOS-EF-3 ACCEPTANCE SUMMARY: 13/24 PASSED
+                   MASTER GATE STATUS SUMMARY                  

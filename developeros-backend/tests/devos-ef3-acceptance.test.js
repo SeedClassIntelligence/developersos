@@ -1,5 +1,6 @@
 const { startTestServer, stopTestServer, apiRequest, loginAs } = require('./helpers');
 const { query, transaction } = require('../db/pool');
+const { runEF3AdversarialTests, runEF3HardeningTests } = require('./devos-ef3-adversarial.test');
 
 async function runEF3AcceptanceSuite() {
   console.log('\nDEVOS-EF-3 ACCEPTANCE — AUDIT LEDGER & COMPLIANCE TRAIL');
@@ -59,7 +60,10 @@ async function runEF3AcceptanceSuite() {
     `HTTP ${concurrentResponses.map(response => response.status).join(',')}; events ${concurrentEvents.rows[0].count}`);
 
   let mutationBlocked = false;
-  try { await query('UPDATE audit_events SET action = $1 WHERE id = $2', ['FORGED', event.id]); } catch (err) { mutationBlocked = /append-only/.test(err.message); }
+  // Remediation note: the runtime role now has no UPDATE/DELETE privilege on the
+  // ledger, so PostgreSQL rejects the statement before the append-only trigger
+  // runs. Either rejection satisfies this test; acceptance of the UPDATE fails it.
+  try { await query('UPDATE audit_events SET action = $1 WHERE id = $2', ['FORGED', event.id]); } catch (err) { mutationBlocked = /append-only|permission denied/.test(err.message); }
   record('DEVOS-EF3-APPEND-001', 'Committed audit evidence cannot be updated or deleted through the application database role', mutationBlocked);
 
   const rollbackId = `ef3-rollback-${Date.now()}`;
@@ -83,20 +87,31 @@ async function runEF3AcceptanceSuite() {
   record('DEVOS-EF3-SECRET-001', 'Audit snapshots redact password and invitation token hashes',
     password.status === 200 && !serialized.includes('password_hash') && !serialized.includes('token_hash'), serialized);
 
+  // Remediation note: events now carry hash_version; each is recomputed with the
+  // ledger's canonical algorithm for its version (devos_audit_event_hash).
   const digestCheck = await query(`
     SELECT COUNT(*)::int AS invalid FROM audit_events e
-    WHERE e.organization_id = 'org1' AND e.event_hash <> encode(digest(concat_ws('|',
-      e.id::text, e.occurred_at::text, COALESCE(e.organization_id,''), COALESCE(e.actor_user_id,''),
-      COALESCE(e.request_id,''), e.action, e.entity_type, e.entity_id,
-      COALESCE(e.before_state::text,''), COALESCE(e.after_state::text,''), COALESCE(e.previous_hash,'')), 'sha256'), 'hex')
+    WHERE e.organization_id = 'org1' AND e.event_hash IS DISTINCT FROM devos_audit_event_hash(e)
   `);
   record('DEVOS-EF3-HASH-001', 'Stored event hashes recompute from canonical event fields', digestCheck.rows[0].invalid === 0,
     `${digestCheck.rows[0].invalid} invalid hashes`);
 
+  const originalCount = results.length;
+  await runEF3AdversarialTests(record);
+  await runEF3HardeningTests(record);
+
   const passedCount = results.filter(r => r.passed).length;
   const redCount = results.length - passedCount;
+  const original = results.slice(0, originalCount);
+  const adversarial = results.slice(originalCount);
+  const breakdown = {
+    original: { passed: original.filter(r => r.passed).length, total: original.length },
+    adversarial: { passed: adversarial.filter(r => r.passed).length, total: adversarial.length },
+  };
+  console.log(`DEVOS-EF-3 ORIGINAL ACCEPTANCE: ${breakdown.original.passed}/${breakdown.original.total} PASSED`);
+  console.log(`DEVOS-EF-3 ADVERSARIAL REGRESSION: ${breakdown.adversarial.passed}/${breakdown.adversarial.total} PASSED`);
   console.log(`DEVOS-EF-3 ACCEPTANCE SUMMARY: ${passedCount}/${results.length} PASSED`);
-  return { passedCount, redCount, failedCount: redCount, total: results.length, results };
+  return { passedCount, redCount, failedCount: redCount, total: results.length, results, breakdown };
 }
 
 if (require.main === module) runEF3AcceptanceSuite().then(r => stopTestServer().then(() => process.exit(r.failedCount ? 1 : 0)));

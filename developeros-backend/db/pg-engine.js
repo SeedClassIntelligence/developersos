@@ -1,7 +1,9 @@
 // ══════════════════════════════════════════════════════════════
 // db/pg-engine.js — PostgreSQL Engine Lifecycle Manager
 // Ensures native PostgreSQL engine is initialized and running.
-// Port / credentials are derived from DATABASE_URL (no hardcoded values).
+// Port / credentials are derived from the most privileged configured URL
+// (ADMIN_DATABASE_URL, then MIGRATION_DATABASE_URL, then DATABASE_URL), so an
+// embedded cluster is never bootstrapped with the runtime role as superuser.
 // ══════════════════════════════════════════════════════════════
 
 require('dotenv').config();
@@ -12,7 +14,7 @@ let pgInstance = null;
 let isStarting = false;
 
 function parseConnection() {
-  const raw = process.env.ADMIN_DATABASE_URL || process.env.DATABASE_URL;
+  const raw = process.env.ADMIN_DATABASE_URL || process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL;
   if (!raw) {
     throw new Error('DATABASE_URL is not set. Configure it in .env (see .env.example).');
   }

@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "db:migrate": "node db/migrate.js",
+    "db:seed": "node db/seed.js",
     "test": "node tests/runner.js all",
+    "test:clean-db": "node tests/runner.js clean-db",
     "test:regression": "node tests/runner.js regression",
     "test:golden": "node tests/runner.js golden",
     "test:security": "node tests/runner.js security",
