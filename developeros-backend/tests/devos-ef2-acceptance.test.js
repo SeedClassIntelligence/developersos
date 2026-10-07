@@ -89,6 +89,14 @@ async function setupSecurityFixture() {
     ON CONFLICT (id) DO NOTHING
   `, [resB.project.id, resB.project.organizationId, resB.project.name, resB.project.type, resB.project.units, resB.project.budget, resB.project.status]);
 
+  // DI1-D1: Tenant B's contract uses a Tenant B partner. The fixture previously
+  // referenced Tenant A's part1, a cross-tenant row the database now rejects.
+  await query(`
+    INSERT INTO partners (id, org_id, name, role, initials)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (id) DO NOTHING
+  `, [resB.partner.id, resB.partner.organizationId, resB.partner.name, resB.partner.role, resB.partner.initials]);
+
   await query(`
     INSERT INTO contracts (id, project_id, partner_id, type, status, value)
     VALUES ($1, $2, $3, $4, $5, $6)

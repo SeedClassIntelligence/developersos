@@ -1,7 +1,7 @@
 # DeveloperOS Master Gate Inventory
 
 **Inventory date:** 2026-10-07  
-**Current position:** DEVOS-DI-1 implemented (66/66); awaiting independent acceptance. DI-2 not started.  
+**Current position:** DEVOS-DI-1 implemented (66/66); DI1-D1 remediated (6/6, database-enforced partner integrity; EF-2 fixture corrected); awaiting independent acceptance. DI-2 not started.  
 **Current disposition:** EF-0, EF-1, EF-2, EF-3 **ACCEPTED**. EF-3 accepted by independent review after remediation (PR #1, merge `ca69d64`). EF-3 is **frozen**: no further audit-ledger functionality without a new authorization.  
 **Execution hold:** No post-EF-3 phase is defined in the canonical source; deployment and merge are not authorized.
 
@@ -40,7 +40,9 @@ This is the living phase ledger for the canonical DeveloperOS source. A checked 
 8. [x] Recorded the DEVOS-DI-1 acceptance contract and produced its RED gate (no implementation).
 9. [x] DI-1 RED gate accepted; implementation authorized.
 10. [x] DI-1 implemented: 66/66 GREEN, no regression.
-11. [ ] Independent acceptance of DI-1; freeze.
+11. [x] DI-1 review: NO-GO on DI1-D1 (execution partner integrity API-only; EF-2 fixture held a cross-tenant row).
+12. [x] DI1-D1 remediated: fixture corrected, migration 007 composite FKs, 6/6 database tests; aggregate 245/245.
+13. [ ] Independent acceptance of DI-1; freeze.
 
 ## Separate readiness items — not part of the EF-2 completion claim
 
