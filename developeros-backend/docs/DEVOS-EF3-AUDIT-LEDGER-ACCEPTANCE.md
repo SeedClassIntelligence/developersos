@@ -1,5 +1,10 @@
 # DEVOS-EF-3 — Audit Ledger and Compliance Trail Acceptance
 
+> **Status (2026-10-07): SUPERSEDED — NOT ACCEPTED.** Independent review ruled EF-3 **NO-GO**:
+> the 11/11 result below did not exercise the ledger's adversarial guarantees. Five defects
+> (EF3-D1…D5) were reproduced and remediated. This document is retained unchanged below as the
+> historical record. Current evidence: `DEVOS-EF3-REMEDIATION-EVIDENCE-REPORT.md`.
+
 **Gate:** EF-3  
 **Status:** COMPLETE — ACCEPTANCE GREEN  
 **Date:** 2026-10-07  

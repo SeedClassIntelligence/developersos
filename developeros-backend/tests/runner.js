@@ -4,6 +4,7 @@
 // ══════════════════════════════════════════════════════════════
 
 require('./test-env'); // MUST be first: redirects DATABASE_URL to the isolated *_test database
+const { runCleanDatabaseGate } = require('./devos-clean-db-gate.test');
 const { runRegressionSuite } = require('./devos-v1-regression.test');
 const { runGoldenPath } = require('./devos-golden-001.test');
 const { runSecurityDebtSuite } = require('./devos-sec-known-debt.test');
@@ -20,6 +21,7 @@ async function main() {
   console.log('║       DEVELOPEROS GATED TEST HARNESS — MASTER RUNNER         ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
+  let cleanDbRes = null;
   let regressionRes = null;
   let goldenRes = null;
   let securityRes = null;
@@ -29,6 +31,11 @@ async function main() {
   let ef3Res = null;
 
   try {
+    // Must run first: it is the first caller of ensureTestDatabase() in the
+    // process, so it observes the freshly recreated, empty database.
+    if (target === 'clean-db' || target === 'all') {
+      cleanDbRes = await runCleanDatabaseGate();
+    }
     if (target === 'regression' || target === 'all') {
       regressionRes = await runRegressionSuite();
     }
@@ -62,6 +69,10 @@ async function main() {
   console.log('                   MASTER GATE STATUS SUMMARY                  ');
   console.log('===============================================================');
 
+  if (cleanDbRes) {
+    const statusLabel = cleanDbRes.failedCount === 0 ? '[GREEN — EMPTY DB BOOTSTRAP VERIFIED]' : `[${cleanDbRes.failedCount} FAILED]`;
+    console.log(`  0. DEVOS-CLEAN-DB GATE     : ${cleanDbRes.passedCount}/${cleanDbRes.total} PASSED  ${statusLabel}`);
+  }
   if (regressionRes) {
     console.log(`  1. DEVOS-V1-REGRESSION   : ${regressionRes.passedCount}/${regressionRes.total} PASSED  [GREEN]`);
   }
@@ -87,9 +98,14 @@ async function main() {
   if (ef3Res) {
     const statusLabel = ef3Res.failedCount === 0 ? '[GREEN]' : `[${ef3Res.failedCount} FAILED]`;
     console.log(`  7. DEVOS-EF-3 ACCEPTANCE  : ${ef3Res.passedCount}/${ef3Res.total} PASSED  ${statusLabel}`);
+    if (ef3Res.breakdown) {
+      console.log(`       original EF-3       : ${ef3Res.breakdown.original.passed}/${ef3Res.breakdown.original.total}`);
+      console.log(`       adversarial EF-3    : ${ef3Res.breakdown.adversarial.passed}/${ef3Res.breakdown.adversarial.total}`);
+    }
   }
   console.log('===============================================================\n');
   const failed =
+    (cleanDbRes && cleanDbRes.failedCount > 0) ||
     (regressionRes && regressionRes.failedCount > 0) ||
     (goldenRes && goldenRes.failedCount > 0) ||
     (securityRes && securityRes.redCount > 0) ||

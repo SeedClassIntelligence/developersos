@@ -5,14 +5,29 @@
 
 const path = require('path');
 const fs = require('fs');
-const { getPool, transaction } = require('./pool');
-const { runMigrations } = require('./migrate');
+const { runMigrations, withMigrationClient } = require('./migrate');
 
 const FIXTURE_PATH = path.join(__dirname, '..', 'tests', 'fixtures', 'canonical-v1-fixture.json');
 
+// The seeder TRUNCATEs business tables, which only the migration/owner role
+// may do; the runtime role holds no TRUNCATE privilege.
+function ownerTransaction(fn) {
+  return withMigrationClient(async (client) => {
+    await client.query('BEGIN');
+    try {
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    }
+  });
+}
+
 function assertSafeToTruncate() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('[SEED] DATABASE_URL is not set.');
+  const url = process.env.MIGRATION_DATABASE_URL;
+  if (!url) throw new Error('[SEED] MIGRATION_DATABASE_URL is not set.');
   const dbName = decodeURIComponent(new URL(url).pathname.slice(1));
   const isTestDb = /_test$/.test(dbName);
   const forced = process.env.ALLOW_DESTRUCTIVE_SEED === 'true';
@@ -31,7 +46,7 @@ async function seedDatabase(fixtureData = null) {
 
   console.log('[SEED] Seeding canonical v1 data into PostgreSQL...');
 
-  return transaction(async (client) => {
+  return ownerTransaction(async (client) => {
     // Truncate existing tables cleanly with CASCADE
     await client.query(`
       TRUNCATE TABLE 

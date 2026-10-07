@@ -272,8 +272,298 @@ async function runEF3AdversarialTests(record) {
   }
 }
 
+// ── Ledger hardening coverage (sequence, heads, checkpoints, receipts, versions) ──
+
+// Independent reconstruction of the documented receipt payload (see
+// docs/DEVOS-EF3-REMEDIATION-EVIDENCE-REPORT.md) — deliberately not imported
+// from the product, so a third-party verifier is modelled faithfully.
+function receiptPayload(r) {
+  return JSON.stringify({
+    type: r.type, version: r.version, organizationId: r.organizationId, chainSeq: r.chainSeq,
+    eventHash: r.eventHash, hashVersion: r.hashVersion, issuedAt: r.issuedAt, keyId: r.keyId,
+  });
+}
+
+async function privilegedSql(statements) {
+  return withPrivileged(async client => {
+    await client.query('BEGIN');
+    try {
+      const out = [];
+      for (const [sql, params] of statements) out.push(await client.query(sql, params));
+      await client.query('COMMIT');
+      return { rejected: false, out };
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      return { rejected: true, message: err.message };
+    }
+  });
+}
+
+async function runEF3HardeningTests(record) {
+  console.log('\n--- EF-3 LEDGER HARDENING (sequence, heads, checkpoints, receipts, hash versions) ---');
+  const { assertUnprivilegedRuntimeRole } = require('../db/pool');
+  const { Pool } = require('pg');
+
+  // Runtime guard: the product refuses to serve on a privileged role.
+  {
+    const ownerPool = new Pool({ connectionString: privilegedUrl(), max: 1 });
+    let refused = null;
+    try { await assertUnprivilegedRuntimeRole(ownerPool); } catch (err) { refused = err.message; }
+    await ownerPool.end();
+    let runtimeOk = true;
+    try { await withRuntime(async () => {}); } catch (err) { runtimeOk = false; }
+    record('DEVOS-EF3-GUARD-001', 'Runtime guard refuses a privileged (owner/superuser) database role and accepts the provisioned runtime role',
+      !!refused && /Refusing to run with privileged database role/.test(refused) && runtimeOk, refused || 'owner role was accepted');
+  }
+
+  // Defense in depth: even the owner cannot TRUNCATE or rewrite evidence while protections are enabled.
+  {
+    const results = {};
+    for (const table of ['audit_events', 'audit_chain_heads', 'audit_checkpoints']) {
+      results[table] = await privilegedSql([[`TRUNCATE ${table}`]]);
+    }
+    const upd = await privilegedSql([[`UPDATE audit_events SET action = 'FORGED' WHERE id = (SELECT id FROM audit_events LIMIT 1)`]]);
+    const rollbackHead = await privilegedSql([[`UPDATE audit_chain_heads SET last_seq = last_seq - 1 WHERE chain_key = 'org:org1'`]]);
+    const deleteHead = await privilegedSql([[`DELETE FROM audit_chain_heads WHERE chain_key = 'org:org1'`]]);
+    const ok = Object.values(results).every(r => r.rejected && /cannot be truncated/.test(r.message)) &&
+      upd.rejected && /append-only/.test(upd.message) && rollbackHead.rejected && deleteHead.rejected;
+    record('DEVOS-EF3-OWNER-001', 'Owner role cannot TRUNCATE ledger tables, UPDATE events, or roll back/delete chain heads without disabling protections',
+      ok, JSON.stringify({ truncate: Object.fromEntries(Object.entries(results).map(([k, v]) => [k, v.message || 'ALLOWED'])), update: upd.message || 'ALLOWED', rollbackHead: rollbackHead.message || 'ALLOWED', deleteHead: deleteHead.message || 'ALLOWED' }));
+  }
+
+  // Downgrade: no new evidence may be written in the timezone-dependent v1 format.
+  {
+    const r = await privilegedSql([[`INSERT INTO audit_events (organization_id, action, entity_type, entity_id, event_hash, hash_version) VALUES ('org1', 'INSERT', 'projects', 'downgrade', $1, 1)`, [crypto.randomBytes(32).toString('hex')]]]);
+    record('DEVOS-EF3-HASHVER-001', 'Appending a hash_version 1 (legacy-format) event is rejected even for the owner role',
+      r.rejected && /hash_version 2/.test(r.message), r.message || 'downgrade INSERT accepted');
+  }
+
+  // Sequence uniqueness enforced by the database.
+  {
+    const tenant = await createSandboxTenant('seq', 2);
+    const [event] = await chainEvents(tenant.organizationId);
+    const r = await privilegedSql([[`INSERT INTO audit_events (organization_id, action, entity_type, entity_id, event_hash, hash_version, chain_seq)
+      VALUES ($1, 'INSERT', 'projects', 'duplicate-position', $2, 2, $3)`, [tenant.organizationId, crypto.randomBytes(32).toString('hex'), event.chain_seq]]]);
+    record('DEVOS-EF3-SEQ-001', 'Database rejects a second event at an existing (organization_id, chain_seq) position',
+      r.rejected && /audit_events_chain_position/.test(r.message), r.message || 'duplicate position accepted');
+  }
+
+  // Attacker who knows the algorithm re-hashes a relinked event: linkage still fails.
+  {
+    const tenant = await createSandboxTenant('pred');
+    const events = await chainEvents(tenant.organizationId);
+    const victim = events[3];
+    const forgedPrev = crypto.randomBytes(32).toString('hex');
+    await privilegedTamper(`UPDATE audit_events SET previous_hash = $2 WHERE id = $1`, [victim.id, forgedPrev]);
+    await privilegedTamper(`UPDATE audit_events e SET event_hash = devos_audit_event_hash(e) WHERE id = $1`, [victim.id]);
+    const res = await apiVerify(tenant);
+    record('DEVOS-EF3-SEQ-002', 'Relinking an event and recomputing its hash is detected as a predecessor mismatch',
+      res.body.valid === false && res.body.failure?.reason === 'PREDECESSOR_MISMATCH' && res.body.failure?.chainSeq === Number(victim.chain_seq),
+      JSON.stringify(res.body));
+  }
+
+  // Concurrency: many simultaneous writers to one tenant get distinct, contiguous positions.
+  {
+    const tenant = await createSandboxTenant('conc', 1);
+    const ids = Array.from({ length: 20 }, (_, i) => `${tenant.organizationId}-c${i}`);
+    const responses = await Promise.all(ids.map((id, i) => apiRequest('POST', '/api/projects', {
+      headers: tenant.headers, body: { id, name: `Concurrent ${i}`, type: 'audit-test' } })));
+    const events = await chainEvents(tenant.organizationId);
+    const seqs = events.map(e => Number(e.chain_seq));
+    const contiguous = seqs.every((s, i) => s === i + 1);
+    const { rows: [head] } = await query(`SELECT last_seq FROM audit_chain_heads WHERE chain_key = devos_audit_chain_key($1)`, [tenant.organizationId]);
+    const res = await apiVerify(tenant);
+    record('DEVOS-EF3-CONCURRENCY-002', '20 concurrent writers to one tenant produce contiguous unique positions 1..N, a matching head, and a valid chain',
+      responses.every(r => r.status === 201) && contiguous && new Set(seqs).size === seqs.length && Number(head.last_seq) === seqs.length && res.body.valid === true,
+      JSON.stringify({ statuses: [...new Set(responses.map(r => r.status))], positions: seqs.length, head: head && head.last_seq, contiguous, valid: res.body.valid }));
+  }
+
+  // Signed receipts are verifiable offline by a third party with only the public key.
+  let receiptTenant = null;
+  let receipt = null;
+  {
+    receiptTenant = await createSandboxTenant('rcpt', 4);
+    const issued = await apiRequest('POST', '/api/audit/checkpoints', { headers: receiptTenant.headers });
+    const keyInfo = await apiRequest('GET', '/api/audit/signing-key', { headers: receiptTenant.headers });
+    receipt = issued.body;
+    const publicKey = crypto.createPublicKey({ key: Buffer.from(keyInfo.body.publicKey || '', 'base64'), format: 'der', type: 'spki' });
+    const offline = issued.status === 201 && crypto.verify(null, Buffer.from(receiptPayload(receipt)), publicKey, Buffer.from(receipt.signature, 'hex'));
+    const events = await chainEvents(receiptTenant.organizationId);
+    const tail = events[events.length - 1];
+    record('DEVOS-EF3-CHECKPOINT-001', 'Issued checkpoint receipt names the current head and verifies offline with the published Ed25519 public key',
+      offline && receipt.chainSeq === Number(tail.chain_seq) && receipt.eventHash === tail.event_hash && keyInfo.body.keyId === receipt.keyId,
+      JSON.stringify({ status: issued.status, offline, chainSeq: receipt.chainSeq }));
+  }
+
+  // Privileged attacker deletes the checkpointed tail and rolls the head back:
+  // the stored signed checkpoint still exposes the truncation.
+  {
+    const events = await chainEvents(receiptTenant.organizationId);
+    const tail = events[events.length - 1];
+    const prior = events[events.length - 2];
+    await withPrivileged(async client => {
+      await client.query('BEGIN');
+      await client.query('ALTER TABLE audit_events DISABLE TRIGGER audit_events_append_only');
+      await client.query('ALTER TABLE audit_chain_heads DISABLE TRIGGER audit_chain_heads_guard');
+      await client.query('DELETE FROM audit_events WHERE id = $1', [tail.id]);
+      await client.query(`UPDATE audit_chain_heads SET last_seq = $2, last_hash = $3 WHERE chain_key = devos_audit_chain_key($1)`,
+        [receiptTenant.organizationId, prior.chain_seq, prior.event_hash]);
+      await client.query('ALTER TABLE audit_chain_heads ENABLE TRIGGER audit_chain_heads_guard');
+      await client.query('ALTER TABLE audit_events ENABLE TRIGGER audit_events_append_only');
+      await client.query('COMMIT');
+    });
+    const res = await apiVerify(receiptTenant);
+    record('DEVOS-EF3-CHECKPOINT-002', 'Tail deletion plus head rollback is detected by the stored signed checkpoint',
+      res.body.valid === false && res.body.failure?.reason === 'TAIL_TRUNCATED' && res.body.failure?.source === 'checkpoint',
+      JSON.stringify(res.body));
+  }
+
+  // Full database compromise: the attacker also deletes the stored checkpoints.
+  // Internal evidence is now self-consistent; the externally held receipt is not fooled.
+  {
+    await withPrivileged(async client => {
+      await client.query('BEGIN');
+      await client.query('ALTER TABLE audit_checkpoints DISABLE TRIGGER audit_checkpoints_append_only');
+      await client.query('DELETE FROM audit_checkpoints WHERE organization_id = $1', [receiptTenant.organizationId]);
+      await client.query('ALTER TABLE audit_checkpoints ENABLE TRIGGER audit_checkpoints_append_only');
+      await client.query('COMMIT');
+    });
+    const internal = await apiVerify(receiptTenant);
+    const withReceipt = await apiVerify(receiptTenant, { receipts: [receipt] });
+    record('DEVOS-EF3-RECEIPT-001', 'After a full-privilege rewrite (events, head, checkpoints), an externally held signed receipt still detects the truncation',
+      withReceipt.body.valid === false && withReceipt.body.failure?.reason === 'TAIL_TRUNCATED' && withReceipt.body.failure?.source === 'receipt',
+      JSON.stringify({ internalOnly: { valid: internal.body.valid, reason: internal.body.failure?.reason || null }, withReceipt: withReceipt.body.failure }));
+  }
+
+  // Forged, foreign-key, and cross-tenant receipts are rejected.
+  {
+    const tenant = await createSandboxTenant('forge', 3);
+    const issued = (await apiRequest('POST', '/api/audit/checkpoints', { headers: tenant.headers })).body;
+    const tampered = { ...issued, chainSeq: issued.chainSeq + 5 };
+    const attacker = crypto.generateKeyPairSync('ed25519');
+    const attackerKeyId = crypto.createHash('sha256').update(attacker.publicKey.export({ type: 'spki', format: 'der' })).digest('hex').slice(0, 32);
+    const selfSigned = { ...issued, chainSeq: issued.chainSeq + 5, keyId: attackerKeyId };
+    selfSigned.signature = crypto.sign(null, Buffer.from(receiptPayload(selfSigned)), attacker.privateKey).toString('hex');
+    const org1Admin = await loginAs('admin@developeros.com');
+    const foreign = (await apiRequest('POST', '/api/audit/checkpoints', { headers: { Authorization: `Bearer ${org1Admin.token}` } })).body;
+    const r1 = await apiVerify(tenant, { receipts: [tampered] });
+    const r2 = await apiVerify(tenant, { receipts: [selfSigned] });
+    const r3 = await apiVerify(tenant, { receipts: [foreign] });
+    const r4 = await apiVerify(tenant, { receipts: [issued] });
+    record('DEVOS-EF3-RECEIPT-002', 'Altered receipts, receipts signed with an untrusted key, and another tenant\'s receipts are rejected; a genuine receipt verifies',
+      r1.body.failure?.reason === 'CHECKPOINT_SIGNATURE_INVALID' && r2.body.failure?.reason === 'CHECKPOINT_UNTRUSTED_KEY' &&
+      r3.body.failure?.reason === 'RECEIPT_ORGANIZATION_MISMATCH' && r4.body.valid === true && r4.body.checkpoints.verified === 2,
+      JSON.stringify([r1.body.failure, r2.body.failure, r3.body.failure, { valid: r4.body.valid, checkpoints: r4.body.checkpoints }]));
+  }
+
+  // The runtime role cannot record a checkpoint for a position that does not exist or that moves backwards.
+  {
+    const tenant = await createSandboxTenant('cpf', 3);
+    await apiRequest('POST', '/api/audit/checkpoints', { headers: tenant.headers });
+    const events = await chainEvents(tenant.organizationId);
+    const fabricated = await runtimeAttack([[`SELECT devos_audit_record_checkpoint($1, $2, $3, now(), 'k', 's')`,
+      [tenant.organizationId, events.length + 50, crypto.randomBytes(32).toString('hex')]]]);
+    const backwards = await runtimeAttack([[`SELECT devos_audit_record_checkpoint($1, 1, $2, now(), 'k', 's')`,
+      [tenant.organizationId, events[0].event_hash]]]);
+    const rewrite = await runtimeAttack([[`UPDATE audit_checkpoints SET chain_seq = 1 WHERE organization_id = $1`, [tenant.organizationId]]]);
+    record('DEVOS-EF3-CHECKPOINT-003', 'Runtime role cannot fabricate a checkpoint, move checkpoints backwards, or rewrite recorded checkpoints',
+      fabricated.rejected && backwards.rejected && rewrite.rejected,
+      JSON.stringify({ fabricated: fabricated.message, backwards: backwards.message, rewrite: rewrite.message }));
+  }
+
+  // New audit endpoints enforce audit:read.
+  {
+    const developer = await loginAs('maria@kgdevelopment.com');
+    const headers = { Authorization: `Bearer ${developer.token}` };
+    const statuses = [
+      (await apiRequest('POST', '/api/audit/verify', { headers, body: { receipts: [] } })).status,
+      (await apiRequest('POST', '/api/audit/checkpoints', { headers })).status,
+      (await apiRequest('GET', '/api/audit/checkpoints', { headers })).status,
+      (await apiRequest('GET', '/api/audit/signing-key', { headers })).status,
+    ];
+    record('DEVOS-EF3-AUTHZ-002', 'Callers without audit:read cannot verify with receipts, issue or list checkpoints, or read the signing key',
+      statuses.every(s => s === 403), JSON.stringify(statuses));
+  }
+
+  await runHashVersionUpgradeTest(record);
+}
+
+// Builds a database at the pre-remediation schema (001–004), writes v1
+// evidence, upgrades to v2, and verifies the boundary with the product verifier.
+async function runHashVersionUpgradeTest(record) {
+  const { runMigrations } = require('../db/migrate');
+  const { verify } = require('../db/repositories/audit.repo');
+  const base = new URL(process.env.MIGRATION_DATABASE_URL);
+  const dbName = `${decodeURIComponent(base.pathname.slice(1))}_hv`;
+  const admin = new Client({ connectionString: process.env.ADMIN_DATABASE_URL });
+  await admin.connect();
+  await admin.query(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`);
+  await admin.query(`CREATE DATABASE "${dbName}"`);
+  const ownerUrl = new URL(base); ownerUrl.pathname = `/${dbName}`;
+  const runtimeUrl = new URL(process.env.DATABASE_URL); runtimeUrl.pathname = `/${dbName}`;
+  const savedMigrationUrl = process.env.MIGRATION_DATABASE_URL;
+  const outcome = {};
+  try {
+    process.env.MIGRATION_DATABASE_URL = ownerUrl.toString();
+    await runMigrations({ until: '004_audit_ledger.sql', skipProvision: true, quiet: true });
+    const owner = new Client({ connectionString: ownerUrl.toString() });
+    await owner.connect();
+    let legacyBefore;
+    try {
+      await owner.query(`INSERT INTO organizations (id, name) VALUES ('hv-org', 'Hash Version Org')`);
+      for (let i = 0; i < 3; i++) await owner.query(`INSERT INTO projects (id, organization_id, name) VALUES ($1, 'hv-org', $2)`, [`hv-p${i}`, `Legacy ${i}`]);
+      legacyBefore = (await owner.query(`SELECT id, event_hash FROM audit_events WHERE organization_id = 'hv-org' ORDER BY occurred_at, id`)).rows;
+    } finally { await owner.end(); }
+
+    await runMigrations({ quiet: true });
+    const runtime = new Client({ connectionString: runtimeUrl.toString() });
+    await runtime.connect();
+    try {
+      await runtime.query('BEGIN');
+      await runtime.query(`INSERT INTO projects (id, organization_id, name) VALUES ('hv-p-new', 'hv-org', 'Post-upgrade')`);
+      await runtime.query('COMMIT');
+      const legacyAfter = (await runtime.query(`SELECT id, event_hash, hash_version FROM audit_events WHERE organization_id = 'hv-org' AND hash_version = 1 ORDER BY occurred_at, id`)).rows;
+      const v2 = (await runtime.query(`SELECT chain_seq, action, previous_hash, hash_version FROM audit_events WHERE organization_id = 'hv-org' AND hash_version = 2 ORDER BY chain_seq`)).rows;
+      await runtime.query(`SET TimeZone = 'Asia/Kathmandu'`);
+      const verified = await verify('hv-org', { client: runtime });
+      outcome.untouched = legacyAfter.length === legacyBefore.length && legacyAfter.every((r, i) => r.id === legacyBefore[i].id && r.event_hash === legacyBefore[i].event_hash);
+      outcome.genesis = v2[0] && v2[0].action === 'GENESIS' && v2[0].previous_hash === legacyBefore[legacyBefore.length - 1].event_hash;
+      outcome.continued = v2.length === 2 && Number(v2[1].chain_seq) === 2;
+      outcome.verified = { valid: verified.valid, hashVersions: verified.hashVersions, hashesVerified: verified.hashesVerified, count: verified.count };
+    } finally { await runtime.end(); }
+
+    const tamper = new Client({ connectionString: ownerUrl.toString() });
+    await tamper.connect();
+    try {
+      await tamper.query('BEGIN');
+      await tamper.query('ALTER TABLE audit_events DISABLE TRIGGER audit_events_append_only');
+      await tamper.query(`UPDATE audit_events SET after_state = jsonb_set(after_state, '{name}', '"forged legacy"') WHERE id = $1`, [legacyBefore[1].id]);
+      outcome.tamperedId = legacyBefore[1].id;
+      await tamper.query('ALTER TABLE audit_events ENABLE TRIGGER audit_events_append_only');
+      await tamper.query('COMMIT');
+    } finally { await tamper.end(); }
+    const runtime2 = new Client({ connectionString: runtimeUrl.toString() });
+    await runtime2.connect();
+    try { outcome.tampered = (await verify('hv-org', { client: runtime2 })).failure; } finally { await runtime2.end(); }
+  } catch (err) {
+    outcome.error = err.message;
+  } finally {
+    process.env.MIGRATION_DATABASE_URL = savedMigrationUrl;
+    await admin.query(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`).catch(() => {});
+    await admin.end();
+  }
+  record('DEVOS-EF3-HASHVER-002', 'Upgrade from hash_version 1: legacy evidence is untouched, a v2 genesis links to the legacy head, the chain continues, and the mixed ledger verifies',
+    !outcome.error && outcome.untouched && outcome.genesis && outcome.continued && outcome.verified.valid === true &&
+    outcome.verified.hashVersions[1] === 4 && outcome.verified.hashVersions[2] === 2 && outcome.verified.hashesVerified === outcome.verified.count,
+    JSON.stringify(outcome));
+  record('DEVOS-EF3-HASHVER-003', 'Tampering with a legacy hash_version 1 event is detected after the upgrade',
+    !outcome.error && outcome.tampered?.reason === 'LEGACY_HASH_MISMATCH' && outcome.tampered?.eventId === outcome.tamperedId,
+    JSON.stringify(outcome.tampered || outcome.error));
+}
+
 module.exports = {
   runEF3AdversarialTests,
+  runEF3HardeningTests,
   // shared with later adversarial sections
   withPrivileged, withRuntime, runtimeAttack, privilegedTamper, createSandboxTenant, projectInsertEvent, chainEvents, apiVerify,
 };

@@ -117,17 +117,36 @@ app.use((err, req, res, next) => {
 });
 
 // ── START ──────────────────────────────────────
-const { runMigrations } = require('./db/migrate');
+// The API runs as the unprivileged runtime role and never migrates schema.
+// Migrations run separately as the owner role (npm run db:migrate).
+const { getPool } = require('./db/pool');
+const { migrationFiles } = require('./db/migrate');
+const auditSigning = require('./db/audit-signing');
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : '0.0.0.0');
 
-runMigrations().catch(err => {
-  console.error('[DB] FATAL: migration failed on startup — refusing to serve traffic:', err.message);
-  process.exit(1);
-});
+async function assertRuntimeReady() {
+  auditSigning.load();
+  const pool = await getPool(); // refuses privileged runtime roles (EF3-D1)
+  const { rows } = await pool.query('SELECT version FROM schema_migrations');
+  const applied = new Set(rows.map(r => r.version));
+  const pending = migrationFiles().filter(f => !applied.has(f));
+  if (pending.length) {
+    throw new Error(`pending migrations (${pending.join(', ')}); run npm run db:migrate`);
+  }
+}
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`\nDeveloperOS API [${process.env.NODE_ENV||'development'}] running live on http://${HOST}:${PORT}\n`);
-});
+// Listen only after the runtime role, schema, and signing key are verified, so
+// no request is ever served by a misconfigured process.
+const server = require('http').createServer(app);
+const ready = assertRuntimeReady()
+  .then(() => new Promise(resolve => server.listen(PORT, HOST, resolve)))
+  .then(() => {
+    console.log(`\nDeveloperOS API [${process.env.NODE_ENV||'development'}] running live on http://${HOST}:${PORT}\n`);
+  })
+  .catch(err => {
+    console.error('[DB] FATAL: runtime not ready — refusing to serve traffic:', err.message);
+    process.exit(1);
+  });
 
-module.exports = { app, server };
+module.exports = { app, server, ready };
