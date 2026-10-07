@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "title": "DeveloperOS EF-2 Resource Authorization Matrix",
+  "domains": [
+    {
+      "domain": "projects",
+      "tableName": "projects",
+      "ownershipRule": "direct_organization",
+      "parentRule": null,
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/projects", "permission": "projects:read", "expectedUnauthorized": 403 },
+        { "action": "GET", "endpoint": "GET /api/projects/:id", "permission": "projects:read", "expectedUnauthorized": 404 },
+        { "action": "CREATE", "endpoint": "POST /api/projects", "permission": "projects:create", "expectedUnauthorized": 403 },
+        { "action": "UPDATE", "endpoint": "PUT /api/projects/:id", "permission": "projects:update", "expectedUnauthorized": 404 },
+        { "action": "DELETE", "endpoint": "DELETE /api/projects/:id", "permission": "projects:delete", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "tasks",
+      "tableName": "tasks",
+      "ownershipRule": "derived_project",
+      "parentRule": "tasks.project_id -> projects.id -> projects.organization_id",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/tasks", "permission": "tasks:read", "expectedUnauthorized": 403 },
+        { "action": "GET", "endpoint": "GET /api/tasks/:id", "permission": "tasks:read", "expectedUnauthorized": 404 },
+        { "action": "CREATE", "endpoint": "POST /api/tasks", "permission": "tasks:create", "expectedUnauthorized": 403 },
+        { "action": "UPDATE", "endpoint": "PUT /api/tasks/:id", "permission": "tasks:update", "expectedUnauthorized": 404 },
+        { "action": "SPECIAL_STATUS_CHANGE", "endpoint": "PATCH /api/tasks/:id/status", "permission": "tasks:status:update", "expectedUnauthorized": 404 },
+        { "action": "DELETE", "endpoint": "DELETE /api/tasks/:id", "permission": "tasks:delete", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "contracts",
+      "tableName": "contracts",
+      "ownershipRule": "derived_project",
+      "parentRule": "contracts.project_id -> projects.id -> projects.organization_id",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/contracts", "permission": "contracts:read", "expectedUnauthorized": 403 },
+        { "action": "GET", "endpoint": "GET /api/contracts/:id", "permission": "contracts:read", "expectedUnauthorized": 404 },
+        { "action": "CREATE", "endpoint": "POST /api/contracts", "permission": "contracts:create", "expectedUnauthorized": 403 },
+        { "action": "UPDATE", "endpoint": "PUT /api/contracts/:id", "permission": "contracts:update", "expectedUnauthorized": 404 },
+        { "action": "SPECIAL_EXECUTE", "endpoint": "POST /api/contracts/:id/execute", "permission": "contracts:execute", "expectedUnauthorized": 404 },
+        { "action": "DELETE", "endpoint": "DELETE /api/contracts/:id", "permission": "contracts:delete", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "permits",
+      "tableName": "permits",
+      "ownershipRule": "derived_project",
+      "parentRule": "permits.project_id -> projects.id -> projects.organization_id",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/permits", "permission": "permits:read", "expectedUnauthorized": 403 },
+        { "action": "GET", "endpoint": "GET /api/permits/:id", "permission": "permits:read", "expectedUnauthorized": 404 },
+        { "action": "CREATE", "endpoint": "POST /api/permits", "permission": "permits:status:update", "expectedUnauthorized": 403 },
+        { "action": "UPDATE", "endpoint": "PUT /api/permits/:id", "permission": "permits:status:update", "expectedUnauthorized": 404 },
+        { "action": "SPECIAL_STATUS_CHANGE", "endpoint": "PATCH /api/permits/:id/status", "permission": "permits:status:update", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "permit_corrections",
+      "tableName": "permit_corrections",
+      "ownershipRule": "derived_permit",
+      "parentRule": "permit_corrections.permit_id -> permits.id -> permits.project_id -> projects.organization_id",
+      "actions": [
+        { "action": "SPECIAL_CORRECTION_UPDATE", "endpoint": "PATCH /api/permits/:id/corrections/:corrId", "permission": "permits:corrections:update", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "capital_stacks",
+      "tableName": "capital_stacks",
+      "ownershipRule": "derived_project",
+      "parentRule": "capital_stacks.project_id -> projects.id -> projects.organization_id",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/capital", "permission": "capital:read", "expectedUnauthorized": 403 },
+        { "action": "GET", "endpoint": "GET /api/capital/:projectId", "permission": "capital:read", "expectedUnauthorized": 404 },
+        { "action": "SPECIAL_CAPITAL_MODIFY", "endpoint": "PUT /api/capital/:projectId", "permission": "capital:update", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "messages",
+      "tableName": "messages",
+      "ownershipRule": "derived_channel",
+      "parentRule": "messages.channel_id -> channels.id -> channels.project_id -> projects.organization_id",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/messages/channels/:id/messages", "permission": "messages:read", "expectedUnauthorized": 404 },
+        { "action": "SPECIAL_SEND_MESSAGE", "endpoint": "POST /api/messages/channels/:id/messages", "permission": "messages:send", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "channels",
+      "tableName": "channels",
+      "ownershipRule": "derived_project",
+      "parentRule": "channels.project_id -> projects.id -> projects.organization_id",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/messages/channels", "permission": "channels:read", "expectedUnauthorized": 403 },
+        { "action": "CREATE", "endpoint": "POST /api/messages/channels", "permission": "messages:send", "expectedUnauthorized": 403 }
+      ]
+    },
+    {
+      "domain": "documents",
+      "tableName": "documents",
+      "ownershipRule": "derived_project",
+      "parentRule": "documents.project_id -> projects.id -> projects.organization_id",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/documents", "permission": "documents:read", "expectedUnauthorized": 403 },
+        { "action": "CREATE", "endpoint": "POST /api/documents", "permission": "documents:create", "expectedUnauthorized": 403 },
+        { "action": "DELETE", "endpoint": "DELETE /api/documents/:id", "permission": "documents:delete", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "team",
+      "tableName": "team_members",
+      "ownershipRule": "direct_organization",
+      "parentRule": null,
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/team", "permission": "team:read", "expectedUnauthorized": 403 },
+        { "action": "CREATE", "endpoint": "POST /api/team", "permission": "team:manage", "expectedUnauthorized": 403 },
+        { "action": "UPDATE", "endpoint": "PUT /api/team/:id", "permission": "team:manage", "expectedUnauthorized": 404 },
+        { "action": "DELETE", "endpoint": "DELETE /api/team/:id", "permission": "team:manage", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "alerts",
+      "tableName": "n/a",
+      "ownershipRule": "derived_tenant_data",
+      "parentRule": "generated dynamically from tenant-scoped projects, tasks, contracts, permits, capital",
+      "actions": [
+        { "action": "LIST", "endpoint": "GET /api/alerts", "permission": "projects:read", "expectedUnauthorized": 403 }
+      ]
+    },
+    {
+      "domain": "invitations",
+      "tableName": "invitations",
+      "ownershipRule": "direct_organization",
+      "parentRule": null,
+      "actions": [
+        { "action": "CREATE", "endpoint": "POST /api/invitations", "permission": "invitations:create", "expectedUnauthorized": 403 },
+        { "action": "ACCEPT", "endpoint": "POST /api/invitations/accept", "permission": "public_token_gated", "expectedUnauthorized": 400 }
+      ]
+    },
+    {
+      "domain": "administration",
+      "tableName": "n/a",
+      "ownershipRule": "platform_global",
+      "parentRule": null,
+      "actions": [
+        { "action": "SPECIAL_ADMIN_STATS", "endpoint": "GET /api/admin/stats", "permission": "platform:admin:stats", "expectedUnauthorized": 403 },
+        { "action": "SPECIAL_ADMIN_HEALTH", "endpoint": "GET /api/admin/health", "permission": "platform:admin:health", "expectedUnauthorized": 403 },
+        { "action": "LIST_ORGS", "endpoint": "GET /api/admin/orgs", "permission": "platform:admin:stats", "expectedUnauthorized": 403 },
+        { "action": "GET_ORG", "endpoint": "GET /api/admin/orgs/:id", "permission": "platform:admin:stats", "expectedUnauthorized": 404 }
+      ]
+    },
+    {
+      "domain": "authentication",
+      "tableName": "users",
+      "ownershipRule": "identity_membership",
+      "parentRule": null,
+      "actions": [
+        { "action": "PUBLIC_LOGIN", "endpoint": "POST /api/auth/login", "permission": "public_credentials", "expectedUnauthorized": 401 },
+        { "action": "PUBLIC_REGISTER_DISABLED", "endpoint": "POST /api/auth/register", "permission": "invitation_only_disabled", "expectedUnauthorized": 403 },
+        { "action": "GET_CONTEXT", "endpoint": "GET /api/auth/context", "permission": "authenticated_membership", "expectedUnauthorized": 403 },
+        { "action": "SWITCH_CONTEXT", "endpoint": "POST /api/auth/switch-context", "permission": "authenticated_membership", "expectedUnauthorized": 403 },
+        { "action": "GET_ME", "endpoint": "GET /api/auth/me", "permission": "authenticated_identity", "expectedUnauthorized": 401 },
+        { "action": "CHANGE_PASSWORD", "endpoint": "POST /api/auth/change-password", "permission": "authenticated_identity", "expectedUnauthorized": 401 }
+      ]
+    }
+  ]
+}

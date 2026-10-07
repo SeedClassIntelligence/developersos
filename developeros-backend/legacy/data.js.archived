@@ -1,0 +1,145 @@
+// ═══════════════════════════════════════════════
+// DATA.JS — In-memory data store
+// All data lives here.
+// UPGRADE PATH: replace each array with
+// a PostgreSQL query (pg module) or
+// MongoDB query (mongoose).
+//
+// Example upgrade for projects:
+//   const { Pool } = require('pg');
+//   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+//   async function getProjects() {
+//     const { rows } = await pool.query('SELECT * FROM projects');
+//     return rows;
+//   }
+// ═══════════════════════════════════════════════
+
+const { v4: uuidv4 } = require('uuid');
+
+// ── PROJECTS ──────────────────────────────────
+let projects = [
+  { id: 'p1', name: 'Westside Housing Phase II',       type: 'Affordable Housing',  units: 120, affordableUnits: 72,  budget: 24200000, progress: 45, phase: 3, phaseLabel: 'Design Development', status: 'on-track', alertCount: 3, city: 'Los Angeles', program: 'LIHTC',         createdAt: '2024-09-01' },
+  { id: 'p2', name: 'Central Commons Mixed-Use',       type: 'Market Rate',         units: 220, affordableUnits: 0,   budget: 48000000, progress: 28, phase: 2, phaseLabel: 'Entitlements',       status: 'at-risk',  alertCount: 2, city: 'Los Angeles', program: 'Market Rate',   createdAt: '2024-11-01' },
+  { id: 'p3', name: 'Veterans Supportive Housing',     type: 'Supportive Housing',  units: 68,  affordableUnits: 68,  budget: 18000000, progress: 12, phase: 1, phaseLabel: 'Predevelopment',     status: 'blocked',  alertCount: 5, city: 'Los Angeles', program: 'HUD VASH',      createdAt: '2025-01-01' },
+  { id: 'p4', name: 'Harbor View Senior Living',       type: 'Senior Housing',      units: 88,  affordableUnits: 44,  budget: 22000000, progress: 72, phase: 5, phaseLabel: 'Construction',       status: 'on-track', alertCount: 0, city: 'Long Beach',  program: 'HUD 202',       createdAt: '2023-06-01' },
+  { id: 'p5', name: 'Riverside Workforce Housing',     type: 'Workforce Housing',   units: 156, affordableUnits: 78,  budget: 36000000, progress: 55, phase: 4, phaseLabel: 'Financing',          status: 'at-risk',  alertCount: 3, city: 'Riverside',   program: 'HOME + LIHTC',  createdAt: '2024-01-01' },
+  { id: 'p6', name: 'Eastside Community Development',  type: 'Mixed Income',        units: 190, affordableUnits: 57,  budget: 52000000, progress: 90, phase: 6, phaseLabel: 'Stabilization',      status: 'on-track', alertCount: 0, city: 'Los Angeles', program: 'LIHTC + City',  createdAt: '2022-09-01' },
+];
+
+// ── PARTNERS ──────────────────────────────────
+let partners = [
+  { id: 'part1', name: 'Arch Studio Inc.',        role: 'architect',     initials: 'AS' },
+  { id: 'part2', name: 'Smith Civil Engineering', role: 'civil',         initials: 'SC' },
+  { id: 'part3', name: 'Green Landscape Design',  role: 'landscape',     initials: 'GL' },
+  { id: 'part4', name: 'Torres Structural',        role: 'structural',    initials: 'TS' },
+  { id: 'part5', name: 'Pacific Survey Co.',       role: 'survey',        initials: 'PS' },
+  { id: 'part6', name: 'EnviroCheck Inc.',         role: 'environmental', initials: 'EC' },
+  { id: 'part7', name: 'GeoTech LA',              role: 'geotechnical',  initials: 'GT' },
+  { id: 'part8', name: 'Western Construction GC', role: 'contractor',    initials: 'WC' },
+];
+
+// ── TASKS ──────────────────────────────────────
+let tasks = [
+  { id: 't1',  projectId: 'p1', title: 'Landscape Plan Stamp',          discipline: 'landscape',     partnerId: 'part3', contractId: null,  status: 'not-started', dueDate: '2025-03-02', note: 'BLOCKS permit package assembly' },
+  { id: 't2',  projectId: 'p1', title: 'MEP Coordination Drawings',     discipline: 'mep',           partnerId: null,    contractId: null,  status: 'not-started', dueDate: '2025-03-05', note: 'No partner assigned' },
+  { id: 't3',  projectId: 'p1', title: 'Parking Layout Final',          discipline: 'arch',          partnerId: 'part1', contractId: 'c1',  status: 'not-started', dueDate: '2025-03-10', note: '' },
+  { id: 't4',  projectId: 'p1', title: 'Civil Site Plan Rev D',         discipline: 'civil',         partnerId: 'part2', contractId: 'c2',  status: 'in-progress', dueDate: '2025-02-26', note: 'Incorporating planning correction comments' },
+  { id: 't5',  projectId: 'p1', title: 'Structural Calc Package',       discipline: 'structural',    partnerId: 'part4', contractId: 'c3',  status: 'in-progress', dueDate: '2025-03-01', note: 'Rev C drawings uploaded' },
+  { id: 't6',  projectId: 'p1', title: 'Floor Plan Revisions',          discipline: 'arch',          partnerId: 'part1', contractId: 'c1',  status: 'in-progress', dueDate: '2025-02-28', note: '3 correction items outstanding' },
+  { id: 't7',  projectId: 'p1', title: 'Final Permit Package Assembly', discipline: 'arch',          partnerId: 'part1', contractId: 'c1',  status: 'blocked',     dueDate: '2025-03-03', note: 'Awaiting landscape stamp + MEP drawings', deps: ['t1','t2'] },
+  { id: 't8',  projectId: 'p1', title: 'Grading Plan Resubmittal',      discipline: 'civil',         partnerId: 'part2', contractId: 'c2',  status: 'blocked',     dueDate: '2025-02-26', note: 'Survey correction pending' },
+  { id: 't9',  projectId: 'p1', title: 'Zoning Compliance Report',      discipline: 'arch',          partnerId: 'part1', contractId: 'c1',  status: 'complete',    dueDate: '2025-01-15', note: 'Approved by planning' },
+  { id: 't10', projectId: 'p1', title: 'Topographic Site Survey',       discipline: 'civil',         partnerId: 'part5', contractId: 'c4',  status: 'complete',    dueDate: '2025-01-10', note: 'Stamped and filed' },
+  { id: 't11', projectId: 'p1', title: 'Phase I Environmental',         discipline: 'environmental', partnerId: 'part6', contractId: 'c5',  status: 'complete',    dueDate: '2024-12-20', note: 'No RECs identified' },
+  { id: 't12', projectId: 'p1', title: 'Soils Report',                  discipline: 'civil',         partnerId: 'part7', contractId: 'c6',  status: 'complete',    dueDate: '2024-12-15', note: '' },
+];
+
+// ── CONTRACTS ─────────────────────────────────
+let contracts = [
+  { id: 'c1', projectId: 'p1', partnerId: 'part1', type: 'Prime Architectural Services', status: 'executed', value: 480000,   executedDate: '2025-01-08', linkedTaskCount: 12 },
+  { id: 'c2', projectId: 'p1', partnerId: 'part2', type: 'Civil Engineering Services',   status: 'executed', value: 185000,   executedDate: '2025-01-20', linkedTaskCount: 8  },
+  { id: 'c3', projectId: 'p1', partnerId: 'part4', type: 'Structural Engineering',       status: 'executed', value: 120000,   executedDate: '2025-01-15', linkedTaskCount: 6  },
+  { id: 'c4', projectId: 'p1', partnerId: 'part5', type: 'Survey Services',              status: 'executed', value: 28000,    executedDate: '2024-12-01', linkedTaskCount: 2  },
+  { id: 'c5', projectId: 'p1', partnerId: 'part6', type: 'Phase I Environmental',        status: 'executed', value: 8500,     executedDate: '2024-11-15', linkedTaskCount: 1  },
+  { id: 'c6', projectId: 'p1', partnerId: 'part7', type: 'Geotechnical Investigation',   status: 'executed', value: 32000,    executedDate: '2024-11-20', linkedTaskCount: 2  },
+  { id: 'c7', projectId: 'p1', partnerId: 'part3', type: 'Landscape Architecture',       status: 'missing',  value: null,     executedDate: null,         linkedTaskCount: 3  },
+  { id: 'c8', projectId: 'p1', partnerId: 'part8', type: 'General Contractor Agreement', status: 'pending',  value: 16800000, executedDate: null,         linkedTaskCount: 22 },
+];
+
+// ── PERMITS ────────────────────────────────────
+let permits = [
+  { id: 'pm1', projectId: 'p1', name: 'Demolition Permit',        jurisdiction: 'City of LA — Building',    type: 'demo',      status: 'approved',      submittedDate: '2024-12-20', approvedDate: '2025-01-14', corrections: [] },
+  { id: 'pm2', projectId: 'p1', name: 'Building Permit — Type V', jurisdiction: 'City of LA — Building',    type: 'building',  status: 'under-review',  submittedDate: '2025-01-28', approvedDate: null,         corrections: [] },
+  { id: 'pm3', projectId: 'p1', name: 'Grading Permit',           jurisdiction: 'City of LA — Public Works',type: 'grading',   status: 'corrections',   submittedDate: '2025-01-18', approvedDate: null,
+    corrections: [
+      { id: 'cor1', text: 'Revise drainage calculations to show 100-yr storm', status: 'in-progress' },
+      { id: 'cor2', text: 'Provide soils report addendum for northwest corner', status: 'not-started' },
+      { id: 'cor3', text: 'Update cross-sections at Building A footprint',      status: 'not-started' },
+    ],
+  },
+  { id: 'pm4', projectId: 'p1', name: 'Fire Sprinkler Permit',    jurisdiction: 'LAFD',                     type: 'fire',      status: 'under-review',  submittedDate: '2025-02-02', approvedDate: null, corrections: [] },
+  { id: 'pm5', projectId: 'p1', name: 'Landscape Permit',         jurisdiction: 'City of LA — Planning',    type: 'landscape', status: 'draft',         submittedDate: null,         approvedDate: null, corrections: [] },
+];
+
+// ── CAPITAL ────────────────────────────────────
+let capitalStacks = [
+  {
+    id: 'cap-p1',
+    projectId: 'p1',
+    totalCost: 24200000,
+    sources: [
+      { id: 'cap1', name: 'Construction Loan — Western Bank',    type: 'debt',   amount: 14000000, pct: 58, status: 'committed', color: '#1A2332' },
+      { id: 'cap2', name: 'LIHTC Equity — National Equity Fund', type: 'equity', amount: 5800000,  pct: 24, status: 'pending',   color: '#2A7A6A', deadline: '2025-03-15', alert: 'Commitment expires in 45 days' },
+      { id: 'cap3', name: 'City Gap Financing — LACDA',          type: 'grant',  amount: 2400000,  pct: 10, status: 'committed', color: '#C4973A' },
+      { id: 'cap4', name: 'HOME Investment Grant',               type: 'grant',  amount: 2000000,  pct: 8,  status: 'committed', color: '#3A7A4A' },
+    ],
+  },
+];
+
+// ── CHANNELS & MESSAGES ────────────────────────
+let channels = [
+  { id: 'ch1', name: 'westside-general',    projectId: 'p1', desc: 'All project stakeholders', unread: 0 },
+  { id: 'ch2', name: 'permits-approvals',   projectId: 'p1', desc: 'Permit coordination',      unread: 2 },
+  { id: 'ch3', name: 'design-coordination', projectId: 'p1', desc: 'Design team channel',      unread: 1 },
+  { id: 'ch4', name: 'construction',        projectId: 'p1', desc: 'Field coordination',       unread: 0 },
+];
+
+let messages = [
+  { id: 'm1', channelId: 'ch1', senderName: 'Maria Rodriguez', senderInitials: 'MR', senderColor: '#2A7A6A', role: 'Developer', text: 'Good morning team — @Anthony we need the grading correction package by Friday.', timestamp: new Date().toISOString() },
+  { id: 'm2', channelId: 'ch1', senderName: 'Anthony Rivera',  senderInitials: 'AR', senderColor: '#3A6A9A', role: 'Civil Eng.', text: 'Got it. Working on the drainage calcs now. Soils addendum is the blocker.', timestamp: new Date().toISOString() },
+  { id: 'm3', channelId: 'ch2', senderName: 'City Planner',    senderInitials: 'CP', senderColor: '#6A6860', role: 'Municipal', text: 'Please include the soils addendum with your resubmittal package.', timestamp: new Date().toISOString() },
+];
+
+// ── DOCUMENTS ──────────────────────────────────
+let documents = [
+  { id: 'd1', projectId: 'p1', name: 'Civil Site Plan Rev D',       category: 'plans',     uploadedBy: 'Smith Civil', date: '2025-02-18', type: 'PDF', icon: '📐' },
+  { id: 'd2', projectId: 'p1', name: 'Building Permit Application', category: 'permits',   uploadedBy: 'Arch Studio', date: '2025-01-28', type: 'PDF', icon: '🏛️' },
+  { id: 'd3', projectId: 'p1', name: 'Arch Services Contract',      category: 'contracts', uploadedBy: 'KG Dev',      date: '2025-01-08', type: 'PDF', icon: '📋' },
+  { id: 'd4', projectId: 'p1', name: 'Phase I Environmental',       category: 'reports',   uploadedBy: 'EnviroCheck', date: '2024-12-12', type: 'PDF', icon: '🌿' },
+  { id: 'd5', projectId: 'p1', name: 'LIHTC Application',          category: 'reports',   uploadedBy: 'KG Dev',      date: '2024-11-30', type: 'PDF', icon: '💰' },
+];
+
+// ── TEAM MEMBERS ───────────────────────────────
+let teamMembers = [
+  { id: 'tm1', name: 'Maria Rodriguez', role: 'developer',  projects: 'All',               lastActive: new Date().toISOString(), status: 'active' },
+  { id: 'tm2', name: 'Maria Chen',      role: 'architect',  projects: 'Westside, Central', lastActive: new Date().toISOString(), status: 'active' },
+  { id: 'tm3', name: 'Anthony Rivera',  role: 'civil',      projects: 'Westside',          lastActive: new Date().toISOString(), status: 'active' },
+  { id: 'tm4', name: 'James Torres',    role: 'structural', projects: 'Westside',          lastActive: new Date().toISOString(), status: 'active' },
+  { id: 'tm5', name: 'City Planner',    role: 'municipal',  projects: 'Westside',          lastActive: new Date().toISOString(), status: 'readonly' },
+  { id: 'tm6', name: 'NEF Capital',     role: 'investor',   projects: 'Westside',          lastActive: new Date().toISOString(), status: 'finance-view' },
+];
+
+// ── ORGANIZATIONS ──────────────────────────────
+let organizations = [
+  { id: 'org1', name: 'KG Development',  type: 'developer', projects: 6, users: 12, plan: 'Pro' },
+  { id: 'org2', name: 'Pacific Housing', type: 'developer', projects: 8, users: 24, plan: 'Enterprise' },
+  { id: 'org3', name: 'City of LA',      type: 'municipal', projects: 15,users: 6,  plan: 'Gov' },
+  { id: 'org4', name: 'Westside CDC',    type: 'nonprofit', projects: 3, users: 8,  plan: 'Pro' },
+];
+
+module.exports = {
+  projects, partners, tasks, contracts, permits,
+  capitalStacks, channels, messages, documents,
+  teamMembers, organizations,
+  uuidv4,
+};

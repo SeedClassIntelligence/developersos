@@ -1,0 +1,254 @@
+{
+  "organizations": [
+    {
+      "id": "org1",
+      "name": "KG Development (Tenant A)",
+      "type": "developer",
+      "plan": "Pro"
+    },
+    {
+      "id": "org2",
+      "name": "Pacific Housing (Tenant B)",
+      "type": "developer",
+      "plan": "Enterprise"
+    }
+  ],
+  "users": [
+    {
+      "id": "u-admin-a",
+      "email": "admin-a@tenant-a.com",
+      "name": "Admin Tenant A",
+      "role": "admin",
+      "orgId": "org1",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-dev-a",
+      "email": "dev-a@tenant-a.com",
+      "name": "Developer Tenant A",
+      "role": "developer",
+      "orgId": "org1",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-viewer-a",
+      "email": "viewer-a@tenant-a.com",
+      "name": "Viewer Tenant A",
+      "role": "viewer",
+      "orgId": "org1",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-admin-b",
+      "email": "admin-b@tenant-b.com",
+      "name": "Admin Tenant B",
+      "role": "admin",
+      "orgId": "org2",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-dev-b",
+      "email": "dev-b@tenant-b.com",
+      "name": "Developer Tenant B",
+      "role": "developer",
+      "orgId": "org2",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-viewer-b",
+      "email": "viewer-b@tenant-b.com",
+      "name": "Viewer Tenant B",
+      "role": "viewer",
+      "orgId": "org2",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-platform-admin",
+      "email": "platform-admin@developeros.com",
+      "name": "Platform Administrator",
+      "role": "platform-admin",
+      "orgId": null,
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-multi-user",
+      "email": "multi-user@cross-org.com",
+      "name": "Cross Tenant Contractor",
+      "role": "developer",
+      "orgId": "org1",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    },
+    {
+      "id": "u-revoked",
+      "email": "revoked-user@tenant-a.com",
+      "name": "Revoked Member",
+      "role": "developer",
+      "orgId": "org1",
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": false
+    },
+    {
+      "id": "u-unaffiliated",
+      "email": "unaffiliated-user@external.com",
+      "name": "Unaffiliated User",
+      "role": "developer",
+      "orgId": null,
+      "passwordHash": "$2a$10$Y0DZDjSv0/rBA4XHcjKhp.7h9hyf1UGrGHAA8VywGu2qh4irN8Yxi",
+      "active": true
+    }
+  ],
+  "memberships": [
+    {
+      "id": "mem-1",
+      "userId": "u-admin-a",
+      "organizationId": "org1",
+      "role": "org-admin",
+      "status": "active"
+    },
+    {
+      "id": "mem-2",
+      "userId": "u-dev-a",
+      "organizationId": "org1",
+      "role": "developer",
+      "status": "active"
+    },
+    {
+      "id": "mem-3",
+      "userId": "u-viewer-a",
+      "organizationId": "org1",
+      "role": "viewer",
+      "status": "active"
+    },
+    {
+      "id": "mem-4",
+      "userId": "u-admin-b",
+      "organizationId": "org2",
+      "role": "org-admin",
+      "status": "active"
+    },
+    {
+      "id": "mem-5",
+      "userId": "u-dev-b",
+      "organizationId": "org2",
+      "role": "developer",
+      "status": "active"
+    },
+    {
+      "id": "mem-6",
+      "userId": "u-viewer-b",
+      "organizationId": "org2",
+      "role": "viewer",
+      "status": "active"
+    },
+    {
+      "id": "mem-7",
+      "userId": "u-multi-user",
+      "organizationId": "org1",
+      "role": "org-admin",
+      "status": "active"
+    },
+    {
+      "id": "mem-8",
+      "userId": "u-multi-user",
+      "organizationId": "org2",
+      "role": "viewer",
+      "status": "active"
+    },
+    {
+      "id": "mem-9",
+      "userId": "u-revoked",
+      "organizationId": "org1",
+      "role": "developer",
+      "status": "revoked"
+    }
+  ],
+  "invitations": [
+    {
+      "id": "inv-valid",
+      "organizationId": "org1",
+      "email": "invited-user@tenant-a.com",
+      "role": "developer",
+      "token": "inv-token-valid-12345",
+      "status": "pending",
+      "expiresAt": "2028-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "inv-expired",
+      "organizationId": "org1",
+      "email": "expired-invite@tenant-a.com",
+      "role": "developer",
+      "token": "inv-token-expired-99999",
+      "status": "pending",
+      "expiresAt": "2020-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "inv-revoked",
+      "organizationId": "org1",
+      "email": "revoked-invite@tenant-a.com",
+      "role": "developer",
+      "token": "inv-token-revoked-88888",
+      "status": "revoked",
+      "expiresAt": "2028-01-01T00:00:00.000Z"
+    }
+  ],
+  "tenantBResources": {
+    "project": {
+      "id": "p-org2-confidential",
+      "organizationId": "org2",
+      "name": "Pacific Heights Tower (Tenant B Confidential)",
+      "type": "Market Rate",
+      "units": 250,
+      "budget": 95000000,
+      "status": "active"
+    },
+    "contract": {
+      "id": "c-org2-confidential",
+      "projectId": "p-org2-confidential",
+      "partnerId": "part1",
+      "type": "General Contracting",
+      "status": "pending",
+      "value": 45000000
+    },
+    "task": {
+      "id": "t-org2-confidential",
+      "projectId": "p-org2-confidential",
+      "title": "Private Structural Core Review",
+      "discipline": "structural",
+      "status": "in-progress"
+    },
+    "permit": {
+      "id": "pm-org2-confidential",
+      "projectId": "p-org2-confidential",
+      "name": "Superstructure Deep Foundation Permit",
+      "jurisdiction": "City of San Francisco",
+      "type": "foundation",
+      "status": "submitted"
+    },
+    "capitalStack": {
+      "id": "cap-org2-confidential",
+      "projectId": "p-org2-confidential",
+      "totalCost": 95000000
+    },
+    "document": {
+      "id": "doc-org2-confidential",
+      "projectId": "p-org2-confidential",
+      "name": "Confidential Pro Forma 2026.pdf",
+      "category": "financial",
+      "type": "pdf"
+    },
+    "channel": {
+      "id": "ch-org2-confidential",
+      "projectId": "p-org2-confidential",
+      "name": "executive-board-private",
+      "description": "Tenant B Executive Communications"
+    }
+  }
+}

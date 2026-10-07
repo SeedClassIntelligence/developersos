@@ -1,0 +1,26 @@
+# ── NEVER COMMIT THESE ────────────────────────
+.env
+.env.local
+.env.production
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Embedded PostgreSQL data cluster & test data
+*.pgdata*
+.pgdata*
+**/.pgdata*/**
+**/*.pgdata*/**
+
+# Archives & Scratch
+*.zip
+scratch/

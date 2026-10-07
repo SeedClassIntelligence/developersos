@@ -1,0 +1,174 @@
+// Comprehensive Test Suite for DeveloperOS Live API
+const http = require('http');
+
+async function run() {
+  console.log('🚀 Running DeveloperOS Comprehensive Live API verification...\n');
+  
+  process.env.NODE_ENV = 'production';
+  process.env.PORT = '3002';
+  process.env.HOST = '127.0.0.1';
+  
+  const { app, server } = require('./server');
+
+  function request(path, options = {}) {
+    return new Promise((resolve, reject) => {
+      const dataPayload = options.body ? (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)) : null;
+      const headers = { ...options.headers };
+      if (dataPayload) {
+        headers['Content-Length'] = Buffer.byteLength(dataPayload);
+      }
+      const opts = {
+        hostname: '127.0.0.1',
+        port: 3002,
+        path,
+        method: options.method || 'GET',
+        headers,
+      };
+
+      const req = http.request(opts, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          let body;
+          try { body = JSON.parse(data); } catch { body = data; }
+          resolve({ status: res.statusCode, headers: res.headers, body });
+        });
+      });
+
+      req.on('error', reject);
+      if (dataPayload) req.write(dataPayload);
+      req.end();
+    });
+  }
+
+  let passed = 0;
+  let failed = 0;
+
+  function assert(name, condition, details = '') {
+    if (condition) {
+      console.log(`  ✅ PASS: ${name}`);
+      passed++;
+    } else {
+      console.error(`  ❌ FAIL: ${name} ${details}`);
+      failed++;
+    }
+  }
+
+  try {
+    // 1. Health check
+    const health = await request('/health');
+    assert('GET /health returns 200 ok', health.status === 200 && health.body.status === 'ok');
+
+    // 2. Unauthenticated access blocked
+    const unauth = await request('/api/projects');
+    assert('GET /api/projects without token returns 401', unauth.status === 401);
+
+    // 3. Login
+    const login = await request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { email: 'maria@kgdevelopment.com', password: 'password123' },
+    });
+    assert('POST /api/auth/login returns JWT token', login.status === 200 && !!login.body.token);
+    const token = login.body.token;
+
+    // 4. Projects CRUD
+    const projects = await request('/api/projects', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/projects returns array of projects', projects.status === 200 && projects.body.length >= 6);
+
+    // 5. Tasks query
+    const tasks = await request('/api/tasks?projectId=p1', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/tasks?projectId=p1 returns tasks', tasks.status === 200 && tasks.body.length > 0);
+
+    // 6. Contracts
+    const contracts = await request('/api/contracts?projectId=p1', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/contracts returns contracts', contracts.status === 200 && contracts.body.length > 0);
+
+    // 7. Permits
+    const permits = await request('/api/permits?projectId=p1', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/permits returns permits', permits.status === 200 && permits.body.length > 0);
+
+    // 8. Capital
+    const capital = await request('/api/capital/p1', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/capital/p1 returns capital stack', capital.status === 200 && capital.body.projectId === 'p1');
+
+    // 9. Messaging
+    const channels = await request('/api/messages/channels?projectId=p1', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/messages/channels returns channels', channels.status === 200 && channels.body.length > 0);
+
+    const postMsg = await request('/api/messages/channels/ch1/messages', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: { senderName: 'Maria', role: 'developer', text: 'Live test message <script>alert("xss")</script>' },
+    });
+    assert('POST /api/messages/channels/:id/messages sanitizes script tags', postMsg.status === 201 && !postMsg.body.text.includes('<script>'));
+
+    // 10. Documents
+    const docs = await request('/api/documents?projectId=p1', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/documents returns documents', docs.status === 200 && docs.body.length > 0);
+
+    // 11. Alerts Engine
+    const alerts = await request('/api/alerts?projectId=p1', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/alerts returns AI alerts', alerts.status === 200 && Array.isArray(alerts.body));
+
+    // 12. Team
+    const team = await request('/api/team', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/team returns team members', team.status === 200 && team.body.length > 0);
+
+    // 13. Admin Auth Check
+    const adminLogin = await request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { email: 'admin@developeros.com', password: 'password123' },
+    });
+    const adminToken = adminLogin.body.token;
+
+    const stats = await request('/api/admin/stats', {
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+    });
+    assert('GET /api/admin/stats authorized for admin', stats.status === 200 && typeof stats.body.totalUnits === 'number');
+
+    const adminHealth = await request('/api/admin/health', {
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+    });
+    assert('GET /api/admin/health reports jwt active', adminHealth.status === 200 && adminHealth.body.services.auth === 'jwt (active)');
+
+    const nonAdminAccess = await request('/api/admin/stats', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    assert('GET /api/admin/stats forbidden for non-admin', nonAdminAccess.status === 403);
+
+    // 14. Static SPA UI
+    const spa = await request('/');
+    assert('GET / serves SPA index.html', spa.status === 200 && typeof spa.body === 'string' && spa.body.includes('DeveloperOS'));
+
+    console.log(`\nResults: ${passed} passed, ${failed} failed.`);
+
+    server.close();
+    process.exit(failed > 0 ? 1 : 0);
+  } catch (err) {
+    console.error('Test execution error:', err);
+    server.close();
+    process.exit(1);
+  }
+}
+
+run();

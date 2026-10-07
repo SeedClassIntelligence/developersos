@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeveloperOS — Real Estate Development Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<!-- LANDING PAGE (shown before login) -->
+<div id="landing-page"></div>
+
+<!-- APP SHELL (shown after login) -->
+<div id="app-shell" style="display:none">
+  <!-- Top Bar -->
+  <div id="topbar"></div>
+  <!-- Body -->
+  <div class="app-body">
+    <!-- Sidebar -->
+    <div id="sidebar"></div>
+    <!-- Main Content — all pages render here -->
+    <div class="app-main" id="app"></div>
+  </div>
+</div>
+
+<!-- Task Modal (global overlay) -->
+<div id="modal-root"></div>
+
+<!-- Scripts — load order matters -->
+<script src="assets/js/state.js"></script>
+<script src="assets/js/mockData.js"></script>
+<script src="components/sidebar.js"></script>
+<script src="components/topbar.js"></script>
+<script src="components/taskCard.js"></script>
+<script src="components/modal.js"></script>
+<script src="pages/landing.js"></script>
+<script src="pages/portfolio.js"></script>
+<script src="pages/project.js"></script>
+<script src="pages/tasks.js"></script>
+<script src="pages/contracts.js"></script>
+<script src="pages/permits.js"></script>
+<script src="pages/messages.js"></script>
+<script src="pages/capital.js"></script>
+<script src="pages/documents.js"></script>
+<script src="pages/aiAlerts.js"></script>
+<script src="pages/admin.js"></script>
+<script src="pages/superAdmin.js"></script>
+<script src="assets/js/router.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
