@@ -1,0 +1,270 @@
+{
+  "title": "DEVOS-DI-1 RED gate \u2014 expected state per test, written BEFORE the first run",
+  "baselineCommit": "1b4115f",
+  "tests": {
+    "DEVOS-DI1-SCHEMA-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-007": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-008": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-009": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-010": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-011": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-012": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-REGISTRY-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-REGISTRY-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-REL-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-REL-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-PROP-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-PROP-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-OPP-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-OPP-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-OPP-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-OPP-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-OPP-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-SITE-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-SITE-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-SITE-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-PROV-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-READY-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-READY-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-INFORMATION-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-OPPORTUNITY-NOT-PROJECT-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-EVAL-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-EVAL-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-EVAL-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-EVAL-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-EVAL-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-DETERMINISM-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-TENANT-CAPITAL-001": {
+      "expected": "RED",
+      "reason": "KNOWN DEFECT \u2014 routes/alerts.js calls capitalRepo.getAll() without organizationId; the tenant's pending capital deadlines never surface (plus DI findings not implemented)"
+    },
+    "DEVOS-DI1-FIND-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-FIND-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-FIND-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-FIND-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-FIND-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-FIND-006": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-FINDING-LIFECYCLE-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-FIND-007": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-TRACE-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-CROSS-TENANT-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-LIST-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-DIRECT-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-MUTATE-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-REF-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-FORGE-ORG-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-MASS-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-LIFECYCLE-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-ADV-SPOOF-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-TENANT-PARTNER-001": {
+      "expected": "RED",
+      "reason": "KNOWN DEFECT \u2014 the alert engine loads every tenant's partners and renders a referenced foreign partner's name; the task API accepts the foreign reference (plus DI findings not implemented)"
+    },
+    "DEVOS-DI1-ADV-EXECREF-001": {
+      "expected": "RED",
+      "reason": "KNOWN DEFECT \u2014 POST/PUT /api/tasks and POST /api/contracts accept another tenant's partnerId (201). A foreign contractId is already rejected by the database (tasks_contract_project_fkey) but returns HTTP 500 instead of 404. [Reason corrected after first run; expected state unchanged: RED]"
+    },
+    "DEVOS-DI1-AUTHZ-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-AUTHZ-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-AUTHZ-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 permissions not in the EF-2 catalog (platform-admin row matches only vacuously)"
+    },
+    "DEVOS-DI1-AUDIT-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 /api/di endpoints not implemented"
+    },
+    "DEVOS-DI1-AUDIT-002": {
+      "expected": "GREEN",
+      "reason": "EXISTING CAPABILITY \u2014 EF-3 verifies every tenant chain today; must stay GREEN through DI-1"
+    },
+    "DEVOS-DI1-EF3-FROZEN-001": {
+      "expected": "GREEN",
+      "reason": "EXISTING CAPABILITY \u2014 EF-3 files are byte-identical to the accepted release; guards the freeze"
+    },
+    "DEVOS-DI1-LEGACY-001": {
+      "expected": "GREEN",
+      "reason": "EXISTING CAPABILITY \u2014 the four working legacy rules produce alerts today; must not regress"
+    },
+    "DEVOS-DI1-LEGACY-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 no findings engine to reconcile legacy alerts against"
+    },
+    "DEVOS-DI1-SCHEMA-003": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-004": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-005": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    },
+    "DEVOS-DI1-SCHEMA-006": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-1 schema / rule registry not implemented"
+    }
+  }
+}

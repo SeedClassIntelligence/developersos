@@ -1,0 +1,38 @@
+{
+  "title": "DEVOS-DI-1 authorization matrix",
+  "contract": "docs/DEVOS-DI1-ACCEPTANCE-CONTRACT.md §3–§4",
+  "statusPolicy": { "missingPermission": 403, "foreignOrUnknownId": 404, "forgedOrganizationHeader": 403, "unauthenticated": 401 },
+  "rolePermissions": {
+    "org-admin": ["relationships:read", "relationships:create", "relationships:update", "properties:read", "properties:create", "properties:update", "opportunities:read", "opportunities:create", "opportunities:update", "opportunities:transition", "site_intelligence:read", "site_intelligence:update", "findings:read", "findings:evaluate", "findings:acknowledge", "findings:resolve"],
+    "developer": ["relationships:read", "relationships:create", "relationships:update", "properties:read", "properties:create", "properties:update", "opportunities:read", "opportunities:create", "opportunities:update", "opportunities:transition", "site_intelligence:read", "site_intelligence:update", "findings:read", "findings:evaluate", "findings:acknowledge", "findings:resolve"],
+    "viewer": ["relationships:read", "properties:read", "opportunities:read", "site_intelligence:read", "findings:read"],
+    "platform-admin": []
+  },
+  "endpoints": [
+    { "domain": "relationships", "action": "LIST", "method": "GET", "path": "/api/di/relationships", "permission": "relationships:read" },
+    { "domain": "relationships", "action": "CREATE", "method": "POST", "path": "/api/di/relationships", "permission": "relationships:create", "body": { "name": "Matrix Relationship", "relationshipType": "broker", "provenance": { "sourceType": "USER_ENTRY" } } },
+    { "domain": "relationships", "action": "GET", "method": "GET", "path": "/api/di/relationships/:relationshipId", "permission": "relationships:read" },
+    { "domain": "relationships", "action": "UPDATE", "method": "PATCH", "path": "/api/di/relationships/:relationshipId", "permission": "relationships:update", "body": { "name": "Renamed" } },
+    { "domain": "properties", "action": "LIST", "method": "GET", "path": "/api/di/properties", "permission": "properties:read" },
+    { "domain": "properties", "action": "CREATE", "method": "POST", "path": "/api/di/properties", "permission": "properties:create", "body": { "name": "Matrix Property", "address": { "city": "Fresno" }, "provenance": { "sourceType": "USER_ENTRY" } } },
+    { "domain": "properties", "action": "GET", "method": "GET", "path": "/api/di/properties/:propertyId", "permission": "properties:read" },
+    { "domain": "properties", "action": "UPDATE", "method": "PATCH", "path": "/api/di/properties/:propertyId", "permission": "properties:update", "body": { "name": "Renamed" } },
+    { "domain": "site_intelligence", "action": "GET", "method": "GET", "path": "/api/di/properties/:propertyId/site-intelligence", "permission": "site_intelligence:read" },
+    { "domain": "site_intelligence", "action": "HISTORY", "method": "GET", "path": "/api/di/properties/:propertyId/site-intelligence/history", "permission": "site_intelligence:read" },
+    { "domain": "site_intelligence", "action": "UPDATE", "method": "PUT", "path": "/api/di/properties/:propertyId/site-intelligence", "permission": "site_intelligence:update", "body": { "facts": { "zoning": { "value": "R3", "status": "KNOWN", "provenance": { "sourceType": "USER_ENTRY" } } } } },
+    { "domain": "opportunities", "action": "LIST", "method": "GET", "path": "/api/di/opportunities", "permission": "opportunities:read" },
+    { "domain": "opportunities", "action": "CREATE", "method": "POST", "path": "/api/di/opportunities", "permission": "opportunities:create", "body": { "name": "Matrix Opportunity", "concept": { "description": "Matrix" }, "provenance": { "sourceType": "USER_ENTRY" } } },
+    { "domain": "opportunities", "action": "GET", "method": "GET", "path": "/api/di/opportunities/:opportunityId", "permission": "opportunities:read" },
+    { "domain": "opportunities", "action": "UPDATE", "method": "PATCH", "path": "/api/di/opportunities/:opportunityId", "permission": "opportunities:update", "body": { "name": "Renamed" } },
+    { "domain": "opportunities", "action": "TRANSITION", "method": "POST", "path": "/api/di/opportunities/:opportunityId/transition", "permission": "opportunities:transition", "body": { "to": "SCREENING", "reason": "matrix" } },
+    { "domain": "opportunities", "action": "HISTORY", "method": "GET", "path": "/api/di/opportunities/:opportunityId/history", "permission": "opportunities:read" },
+    { "domain": "opportunities", "action": "READINESS", "method": "GET", "path": "/api/di/opportunities/:opportunityId/readiness", "permission": "opportunities:read" },
+    { "domain": "findings", "action": "RULES", "method": "GET", "path": "/api/di/rules", "permission": "findings:read" },
+    { "domain": "findings", "action": "EVALUATE", "method": "POST", "path": "/api/di/evaluate", "permission": "findings:evaluate", "body": { "asOf": "2025-02-01T00:00:00.000Z", "dryRun": true } },
+    { "domain": "findings", "action": "LIST", "method": "GET", "path": "/api/di/findings", "permission": "findings:read" },
+    { "domain": "findings", "action": "GET", "method": "GET", "path": "/api/di/findings/:findingId", "permission": "findings:read" },
+    { "domain": "findings", "action": "HISTORY", "method": "GET", "path": "/api/di/findings/:findingId/history", "permission": "findings:read" },
+    { "domain": "findings", "action": "ACKNOWLEDGE", "method": "POST", "path": "/api/di/findings/:findingId/acknowledge", "permission": "findings:acknowledge", "body": { "note": "matrix" } },
+    { "domain": "findings", "action": "RESOLVE", "method": "POST", "path": "/api/di/findings/:findingId/resolve", "permission": "findings:resolve", "body": { "note": "matrix" } }
+  ]
+}
