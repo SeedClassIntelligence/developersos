@@ -133,8 +133,9 @@ async function main() {
   if (di1Res) {
     const b = di1Res.baseline;
     const expRed = Object.values(DI1_BASELINE.tests).filter(t => t.expected === 'RED').length;
-    const statusLabel = b.mismatches === 0 ? `[LOCKED — matches baseline: ${expRed} expected RED]` : `[${b.mismatches} BASELINE MISMATCH]`;
-    console.log(`  8. DEVOS-DI-1 RED GATE    : ${di1Res.passedCount}/${di1Res.total} GREEN  ${statusLabel}`);
+    const statusLabel = b.mismatches > 0 ? `[${b.mismatches} BASELINE MISMATCH]`
+      : expRed === 0 ? '[GREEN — matches baseline, no expected RED]' : `[LOCKED — matches baseline: ${expRed} expected RED]`;
+    console.log(`  8. DEVOS-DI-1 ACCEPTANCE  : ${di1Res.passedCount}/${di1Res.total} GREEN  ${statusLabel}`);
     if (b.unexpectedGreen.length) console.log(`       unexpected GREEN    : ${b.unexpectedGreen.join(', ')}`);
     if (b.unexpectedRed.length) console.log(`       unexpected RED      : ${b.unexpectedRed.join(', ')}`);
     if (b.notRun.length) console.log(`       not run             : ${b.notRun.join(', ')}`);

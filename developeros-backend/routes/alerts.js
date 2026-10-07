@@ -21,10 +21,14 @@ router.get('/', requirePermission('projects:read'), async (req, res, next) => {
     const [tasks, projects, partners, contracts, permits, capitalStacks] = await Promise.all([
       tasksRepo.getAll({ organizationId: req.organizationId }),
       projectsRepo.getAll(req.organizationId),
-      partnersRepo.getAll(),
+      // DI-1: every intelligence input is tenant scoped. Partner names come
+      // only from this organization (TENANT-PARTNER-001) and capital stacks
+      // are fetched with the organization context (TENANT-CAPITAL-001; the
+      // unscoped call matched organization_id = NULL and returned nothing).
+      partnersRepo.getAll(req.organizationId),
       contractsRepo.getAll(null, req.organizationId),
       permitsRepo.getAll(null, req.organizationId),
-      capitalRepo.getAll(),
+      capitalRepo.getAll(null, req.organizationId),
     ]);
 
     const alerts = generateAlerts(projectId, {
@@ -47,9 +51,11 @@ function generateAlerts(filterProjectId, data) {
   const { tasks, projects, partners, contracts, permits, capitalStacks } = data;
   const alerts = [];
 
+  // partners is tenant-scoped; a reference outside it (possible only in
+  // pre-existing rows) is rendered generically, never as the foreign id.
   function partnerName(partnerId) {
     const p = partners.find(p => p.id === partnerId);
-    return p ? p.name : partnerId;
+    return p ? p.name : 'an unlisted partner';
   }
 
   // ── RULE 1: Task with no contract ──────────────
