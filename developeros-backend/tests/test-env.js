@@ -11,7 +11,11 @@ if (!process.env.ADMIN_DATABASE_URL) {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL must be set in .env to run tests.');
   }
-  process.env.ADMIN_DATABASE_URL = process.env.DATABASE_URL; // admin connection (create DB only)
+  // Admin connection (create DB only) targets the "postgres" maintenance DB,
+  // which exists on every cluster — the app DB may not exist yet on a fresh one.
+  const admin = new URL(process.env.DATABASE_URL);
+  admin.pathname = '/postgres';
+  process.env.ADMIN_DATABASE_URL = admin.toString();
   const u = new URL(process.env.DATABASE_URL);
   const base = u.pathname.replace(/^\//, '') || 'postgres';
   u.pathname = '/' + (base.endsWith('_test') ? base : `${base}_test`);
