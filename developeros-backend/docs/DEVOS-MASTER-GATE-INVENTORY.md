@@ -1,7 +1,7 @@
 # DeveloperOS Master Gate Inventory
 
 **Inventory date:** 2026-10-07  
-**Current position:** DEVOS-DI-1 **ACCEPTED and FROZEN** (independent review, after DI1-D1 remediation at `8bc4e3a`). DI-2 RED gate produced (46 tests: 42 RED / 4 GREEN, matching prediction); awaiting review; DI-2 implementation **not authorized**.  
+**Current position:** DEVOS-DI-1 **ACCEPTED and FROZEN** (independent review, after DI1-D1 remediation at `8bc4e3a`). DI-2 RED gate revision 1 (46 tests, 42 RED / 4 GREEN) reviewed: **CONDITIONAL GO**. Contract-and-RED-gate amendment (revision 2, A1–A4) produced: 52 tests, 48 RED / 4 GREEN, matching prediction; awaiting review. DI-2 implementation **not authorized**.  
 **Current disposition:** EF-0, EF-1, EF-2, EF-3 **ACCEPTED**. EF-3 accepted by independent review after remediation (PR #1, merge `ca69d64`). EF-3 is **frozen**: no further audit-ledger functionality without a new authorization.  
 **Execution hold:** No post-EF-3 phase is defined in the canonical source; deployment and merge are not authorized.
 
@@ -31,7 +31,16 @@ This is the living phase ledger for the canonical DeveloperOS source. A checked 
   - Accepted evidence: protected 173/173, DI-1 66/66, DI1-D1 6/6 — **245/245** from an empty cluster; GitHub Actions run #9 success on PostgreSQL 18.6.
   - Evidence: `docs/DEVOS-DI1-COMPLETION-EVIDENCE-REPORT.md`, `docs/DEVOS-DI1-D1-REMEDIATION-ADDENDUM.md`.
   - **Frozen:** migrations `006`/`007`, `intelligence/engine.js`, `intelligence/readiness.js`, `intelligence/rule-registry.json`, `db/repositories/di.repo.js`, `db/repositories/findings.repo.js`, `middleware/references.js`. Digests are pinned by the DI-2 gate (`DEVOS-DI2-DI1-FROZEN-001`). A later phase that finds a defect in them stops and classifies it rather than modifying them.
-- [ ] **DEVOS-DI-2 — Policy & Gate Engine** — RED gate produced: 46 tests, 42 RED / 4 GREEN (0 mismatches vs pre-run prediction); accepted aggregate 245/245. Contract: `docs/DEVOS-DI2-ACCEPTANCE-CONTRACT.md` (⚑ decisions for review). Report: `docs/DEVOS-DI2-RED-GATE-REPORT.md`. Implementation not authorized.
+- [ ] **DEVOS-DI-2 — Policy & Gate Engine**
+  - **Revision 1** (`93d8ea5`): 46 tests, 42 RED / 4 GREEN (0 mismatches). Founder review: **CONDITIONAL GO**. Report `docs/DEVOS-DI2-RED-GATE-REPORT.md` and evidence `docs/evidence/di2-red-gate-run.txt` are preserved unchanged.
+  - **Revision 2**, amendment only:
+    - A1: NOT_APPLICABLE needs criterion-level permission, included in the content hash.
+    - A2: TYPE_MISMATCH applies to historical values; new writes are validated.
+    - A3: versioned DI-2 location evidence, with no fallback to current Property fields.
+    - A4: historical Gate 0 at `asOf`, separate from the run precondition.
+  - Revision 2 gate: 52 tests, 48 RED / 4 GREEN, 0 mismatches against the pre-run prediction. Accepted aggregate 245/245.
+  - Contract `docs/DEVOS-DI2-ACCEPTANCE-CONTRACT.md` (revision 2; §10 lists the open ⚑ points). Report `docs/DEVOS-DI2-RED-GATE-AMENDMENT-REPORT.md`. Evidence `docs/evidence/di2-red-gate-run-r2.txt`.
+  - Implementation not authorized.
 
 ## Required next decision and next execution sequence
 

@@ -1,7 +1,9 @@
 // ══════════════════════════════════════════════════════════════
 // DEVOS-DI-2 ACCEPTANCE — Policy & Gate Engine (RED gate)
 //
-// Executable form of docs/DEVOS-DI2-ACCEPTANCE-CONTRACT.md.
+// Executable form of docs/DEVOS-DI2-ACCEPTANCE-CONTRACT.md (revision 2:
+// amendments A1 NOT_APPLICABLE permission, A2 TYPE_MISMATCH vs write
+// validation, A3 versioned location evidence, A4 historical Gate 0).
 // Fixtures:
 //   fixtures/di2-qualification-oracle.json  hand-derived outcome oracle
 //   fixtures/di2-authorization-matrix.json  endpoint × permission contract
@@ -24,7 +26,7 @@ const ORACLE = require('./fixtures/di2-qualification-oracle.json');
 const MATRIX = require('./fixtures/di2-authorization-matrix.json');
 const ROOT = path.join(__dirname, '..');
 
-const DI2_TABLES = ['di_policy_profiles', 'di_policy_versions', 'di_policy_criteria', 'di_candidate_attributes', 'di_qualifications'];
+const DI2_TABLES = ['di_policy_profiles', 'di_policy_versions', 'di_policy_criteria', 'di_candidate_attributes', 'di_qualifications', 'di_location_evidence'];
 const OUTCOMES = ['GO', 'CONDITIONAL_GO', 'WATCH', 'HOLD', 'NO_GO', 'INFORMATION_REQUIRED'];
 // DI-1 accepted and frozen at 8bc4e3a/7e46306.
 const DI1_FROZEN = {
@@ -48,8 +50,9 @@ const EF3_FROZEN = {
 const digest = f => crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, f))).digest('hex');
 
 // Contract §6 content hash, computed independently of the product.
+// A1: allowNotApplicable is part of the immutable hashed content (false when absent).
 function contentHash(criteria) {
-  const canonical = criteria.map(c => ({ key: c.key, kind: c.kind, label: c.label, operand: c.operand, operator: c.operator, rationale: c.rationale ?? null, subject: c.subject }));
+  const canonical = criteria.map(c => ({ allowNotApplicable: c.allowNotApplicable === true, key: c.key, kind: c.kind, label: c.label, operand: c.operand, operator: c.operator, rationale: c.rationale ?? null, subject: c.subject }));
   return crypto.createHash('sha256').update(JSON.stringify(canonical), 'utf8').digest('hex');
 }
 
@@ -76,15 +79,21 @@ async function probe(client, statements) {
   } finally { await client.query('ROLLBACK').catch(() => {}); }
 }
 
-// ── fixture: DI-1 records via SQL (frozen schema), DI-2 attributes via SQL ──
+// ── fixture: DI-1 records via SQL (frozen schema), DI-2 attributes and location evidence via SQL ──
+// A3: the current di_properties.region is the sentinel ORACLE.currentPropertyRegion for every
+// opportunity; location criteria must read di_location_evidence at asOf, so any fallback to the
+// current Property fields changes the oracle outcome.
 function oppSpec(o) {
   const facts = { ...ORACLE.base.facts, ...(o.facts || {}) };
   for (const k of o.omitFacts || []) delete facts[k];
-  return { facts, attributes: { ...ORACLE.base.attributes, ...(o.attributes || {}) }, region: o.region || ORACLE.base.region };
+  const location = o.omitLocation ? null : { ...ORACLE.base.location, region: o.region || ORACLE.base.region };
+  return { facts, attributes: { ...ORACLE.base.attributes, ...(o.attributes || {}) }, location };
 }
+const locationRow = (id, org, prop, version, l, recordedAt) => [`INSERT INTO di_location_evidence (id, organization_id, property_id, version, city, region, postal_code, country, source_type, source_reference, recorded_by, recorded_at)
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'PUBLIC_RECORD','di2 fixture','dq-fixture',$9)`, [id, org, prop, version, l.city, l.region, l.postalCode, l.country, recordedAt]];
 
 async function loadFixture() {
-  const status = { di1: false, attributes: false, attributesError: null };
+  const status = { di1: false, attributes: false, attributesError: null, location: false, locationError: null };
   await withOwner(async c => {
     const { rows: [admin] } = await c.query(`SELECT password_hash FROM users WHERE email = 'admin@developeros.com'`);
     await c.query('BEGIN');
@@ -97,10 +106,19 @@ async function loadFixture() {
       const s = oppSpec(o);
       const prop = `${o.id}-prop`;
       await c.query(`INSERT INTO di_properties (id, organization_id, name, city, region, country, source_type, source_reference, recorded_by, created_at, updated_at)
-        VALUES ($1,$2,$3,'Fixture City',$4,'US','USER_ENTRY','di2 fixture','dq-fixture',$5,$5)`, [prop, o.tenant, `Property ${o.id}`, s.region, ORACLE.recordedAt]);
+        VALUES ($1,$2,$3,'Fixture City',$4,'US','USER_ENTRY','di2 fixture','dq-fixture',$5,$5)`, [prop, o.tenant, `Property ${o.id}`, ORACLE.currentPropertyRegion, ORACLE.recordedAt]);
       for (const [k, f] of Object.entries(s.facts)) {
         await c.query(`INSERT INTO di_site_facts (id, organization_id, property_id, fact_key, value, value_status, version, source_type, source_reference, recorded_by, recorded_at)
           VALUES ($1,$2,$3,$4,$5::jsonb,$6,1,'USER_ENTRY','di2 fixture','dq-fixture',$7)`, [`${prop}-${k}`, o.tenant, prop, k, f.value === null ? null : JSON.stringify(f.value), f.status, ORACLE.recordedAt]);
+      }
+      // A4: later site-fact versions (version 1 when the key had no base fact).
+      for (const [k, versions] of Object.entries(o.factHistory || {})) {
+        let v = k in s.facts ? 2 : 1;
+        for (const f of versions) {
+          await c.query(`INSERT INTO di_site_facts (id, organization_id, property_id, fact_key, value, value_status, version, source_type, source_reference, recorded_by, recorded_at)
+            VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,'USER_ENTRY','di2 fixture','dq-fixture',$8)`, [`${prop}-${k}-${v}`, o.tenant, prop, k, f.value === null ? null : JSON.stringify(f.value), f.status, v, f.recordedAt]);
+          v++;
+        }
       }
       await c.query(`INSERT INTO di_opportunities (id, organization_id, property_id, name, status, concept_description, source_type, source_reference, recorded_by, created_at, updated_at)
         VALUES ($1,$2,$3,$4,$5,'Fixture concept','USER_ENTRY','di2 fixture','dq-fixture',$6,$6)`, [o.id, o.tenant, prop, `Opportunity ${o.id}`, o.status, ORACLE.recordedAt]);
@@ -130,6 +148,26 @@ async function loadFixture() {
       await c.query('ROLLBACK').catch(() => {});
       status.attributesError = `${err.code || ''} ${err.message}`;
     }
+    try {
+      await c.query('BEGIN');
+      for (const o of ORACLE.opportunities) {
+        const s = oppSpec(o);
+        if (!s.location) continue;
+        const prop = `${o.id}-prop`;
+        await c.query(...locationRow(`${prop}-loc-1`, o.tenant, prop, 1, s.location, ORACLE.recordedAt));
+        let v = 2; let prev = s.location;
+        for (const l of o.locationHistory || []) {
+          prev = { ...prev, ...l };
+          await c.query(...locationRow(`${prop}-loc-${v}`, o.tenant, prop, v, prev, l.recordedAt));
+          v++;
+        }
+      }
+      await c.query('COMMIT');
+      status.location = true;
+    } catch (err) {
+      await c.query('ROLLBACK').catch(() => {});
+      status.locationError = `${err.code || ''} ${err.message}`;
+    }
   });
   return status;
 }
@@ -140,7 +178,7 @@ async function runDI2AcceptanceSuite() {
   console.log('===============================================================\n');
   await startTestServer(3005, true);
   const fixture = await loadFixture();
-  console.log(`  [DI2] fixture: di1=${fixture.di1} attributes=${fixture.attributes}${fixture.attributesError ? ` (${fixture.attributesError})` : ''}`);
+  console.log(`  [DI2] fixture: di1=${fixture.di1} attributes=${fixture.attributes}${fixture.attributesError ? ` (${fixture.attributesError})` : ''} location=${fixture.location}${fixture.locationError ? ` (${fixture.locationError})` : ''}`);
 
   const results = [];
   async function t(id, cls, title, fn) {
@@ -177,11 +215,27 @@ async function runDI2AcceptanceSuite() {
   console.log(`  [DI2] policies: alpha=${P.alpha.error || 'published'} beta=${P.beta.error || 'published'}`);
   const qualify = (who, oppId, body) => api(who, 'POST', `/api/di/opportunities/${oppId}/qualify`, body);
   const resultMap = q => Object.fromEntries((q?.criteria || []).map(c => [c.key, c.result]));
+  // Checks one oracle `evaluations` entry: outcome, Gate 0 at asOf and every named criterion probe.
+  const policyKeys = o => ORACLE.policies[o.policy].criteria.map(c => c.key);
+  function checkEvaluation(o, e, r) {
+    const q = r.body || {};
+    const bad = [];
+    if (r.status !== 200) return [`HTTP ${r.status}`];
+    if (q.outcome !== e.outcome) bad.push(`outcome ${q.outcome} ≠ ${e.outcome}`);
+    if (e.gate0Status && q.gate0?.status !== e.gate0Status) bad.push(`gate0.status ${q.gate0?.status}`);
+    if (e.gate0Missing && JSON.stringify(q.gate0?.missing) !== JSON.stringify(e.gate0Missing)) bad.push(`gate0.missing ${JSON.stringify(q.gate0?.missing)}`);
+    for (const k of policyKeys(o).filter(k => e[k])) {
+      const c = (q.criteria || []).find(x => x.key === k); const p = e[k];
+      if (!c || c.result !== p.result || (p.reason && c.reason !== p.reason) || (c.observed ? c.observed.value : null) !== p.observedValue ||
+        (c.observed ? c.observed.version : null) !== p.observedVersion) bad.push(`${k} ${JSON.stringify(c)}`);
+    }
+    return bad;
+  }
 
   // ════════════════ A. STRUCTURAL ════════════════
   console.log('\n  --- A. Structural ---');
 
-  await t('DEVOS-DI2-SCHEMA-001', 'A', 'All five DI-2 tables exist via a migration after 007', async () => {
+  await t('DEVOS-DI2-SCHEMA-001', 'A', 'All six DI-2 tables (including A3 di_location_evidence) exist via a migration after 007', async () => {
     const missing = [];
     for (const tb of DI2_TABLES) if (!(await tableExists(tb))) missing.push(tb);
     const { rows } = await query(`SELECT version FROM schema_migrations WHERE version >= '008' ORDER BY version`);
@@ -263,7 +317,7 @@ async function runDI2AcceptanceSuite() {
     return { pass: ['state', 'kind', 'operator', 'outcome'].every(k => out[k] === '23514') && out.outcomeControl === 'accepted', detail: out };
   }));
 
-  await t('DEVOS-DI2-SCHEMA-009', 'A', 'Published policy content is immutable in the database (criteria insert/update/delete, hash, revert to DRAFT); PUBLISHED → RETIRED allowed', () => withOwner(async c => {
+  await t('DEVOS-DI2-SCHEMA-009', 'A', 'Published policy content is immutable in the database (criteria insert/update/delete incl. A1 NOT_APPLICABLE permission, hash, revert to DRAFT); PUBLISHED → RETIRED allowed', () => withOwner(async c => {
     if (!(await tableExists('di_policy_criteria'))) return { pass: false, detail: 'DI-2 tables absent' };
     const setup = [gProfile('dq-g-p1'), version('dq-g-v1', 'dq-gamma', 'dq-g-p1'), criterion('dq-g-c1', 'dq-gamma', 'dq-g-v1'),
       [`UPDATE di_policy_versions SET state = 'PUBLISHED', content_hash = 'abc', published_by = 'probe', published_at = now() WHERE id = 'dq-g-v1'`]];
@@ -271,6 +325,7 @@ async function runDI2AcceptanceSuite() {
       insertCriterion: criterion('dq-g-c2', 'dq-gamma', 'dq-g-v1', 'k2'),
       updateCriterion: [`UPDATE di_policy_criteria SET operand = '"R9"'::jsonb WHERE id = 'dq-g-c1'`],
       deleteCriterion: [`DELETE FROM di_policy_criteria WHERE id = 'dq-g-c1'`],
+      changeNaPermission: [`UPDATE di_policy_criteria SET allow_not_applicable = TRUE WHERE id = 'dq-g-c1'`],
       changeHash: [`UPDATE di_policy_versions SET content_hash = 'forged' WHERE id = 'dq-g-v1'`],
       revertToDraft: [`UPDATE di_policy_versions SET state = 'DRAFT' WHERE id = 'dq-g-v1'`],
     };
@@ -280,8 +335,8 @@ async function runDI2AcceptanceSuite() {
     return { pass: Object.values(out).every(v => v === 'rejected') && retire.failedAt === -1, detail: { ...out, retire: retire.failedAt === -1 ? 'allowed' : retire.message } };
   }));
 
-  await t('DEVOS-DI2-SCHEMA-010', 'A', 'Qualifications and candidate-attribute versions are append-only for the runtime role (UPDATE/DELETE rejected)', async () => {
-    if (!(await tableExists('di_qualifications'))) return { pass: false, detail: 'DI-2 tables absent' };
+  await t('DEVOS-DI2-SCHEMA-010', 'A', 'Qualifications, candidate-attribute versions and (A3) location-evidence versions are append-only for the runtime role (UPDATE/DELETE rejected)', async () => {
+    if (!(await tableExists('di_qualifications')) || !(await tableExists('di_location_evidence'))) return { pass: false, detail: 'DI-2 tables absent' };
     await withOwner(async c => {
       await c.query('BEGIN');
       await c.query(`INSERT INTO di_opportunities (id, organization_id, name, status, source_type, recorded_by) VALUES ('dq-g-durable','dq-gamma','durable','NEW','USER_ENTRY','seed')`);
@@ -291,6 +346,8 @@ async function runDI2AcceptanceSuite() {
         VALUES ('dq-g-durable-q','dq-gamma','dq-g-durable','dq-g-durable-v','h',now(),'HOLD','[]'::jsonb,'{}'::jsonb,'seed')`);
       await c.query(`INSERT INTO di_candidate_attributes (id, organization_id, opportunity_id, attribute_key, value, value_status, version, source_type, recorded_by)
         VALUES ('dq-g-durable-a','dq-gamma','dq-g-durable','proposed_units','10'::jsonb,'KNOWN',1,'USER_ENTRY','seed')`);
+      await c.query(`INSERT INTO di_properties (id, organization_id, name, source_type, recorded_by) VALUES ('dq-g-durable-prop','dq-gamma','durable','USER_ENTRY','seed')`);
+      await c.query(...locationRow('dq-g-durable-l', 'dq-gamma', 'dq-g-durable-prop', 1, { city: 'X', region: 'CA', postalCode: null, country: 'US' }, '2025-01-01T00:00:00.000Z'));
       await c.query('COMMIT');
     });
     const attempt = sql => withRuntime(async c => { await c.query('BEGIN'); try { const r = await c.query(sql); return r.rowCount ? 'CHANGED' : 'no row'; } catch (e) { return 'rejected'; } finally { await c.query('ROLLBACK').catch(() => {}); } });
@@ -299,9 +356,20 @@ async function runDI2AcceptanceSuite() {
       deleteQualification: await attempt(`DELETE FROM di_qualifications WHERE id = 'dq-g-durable-q'`),
       updateAttribute: await attempt(`UPDATE di_candidate_attributes SET value = '999'::jsonb WHERE id = 'dq-g-durable-a'`),
       deleteAttribute: await attempt(`DELETE FROM di_candidate_attributes WHERE id = 'dq-g-durable-a'`),
+      updateLocation: await attempt(`UPDATE di_location_evidence SET region = 'NV' WHERE id = 'dq-g-durable-l'`),
+      deleteLocation: await attempt(`DELETE FROM di_location_evidence WHERE id = 'dq-g-durable-l'`),
     };
     return { pass: Object.values(out).every(v => v === 'rejected'), detail: out };
   });
+
+  await t('DEVOS-DI2-SCHEMA-012', 'A', 'A3: database rejects location evidence on another tenant\'s property (23503; same-tenant control accepted)', () => withOwner(async c => {
+    if (!(await tableExists('di_location_evidence'))) return { pass: false, detail: 'di_location_evidence absent' };
+    const l = { city: 'X', region: 'CA', postalCode: null, country: 'US' };
+    const control = [[`INSERT INTO di_properties (id, organization_id, name, source_type, recorded_by) VALUES ('dq-g-prop','dq-gamma','probe','USER_ENTRY','probe')`],
+      locationRow('dq-g-l1', 'dq-gamma', 'dq-g-prop', 1, l, '2025-01-01T00:00:00.000Z')];
+    const out = await probe(c, [...control, locationRow('dq-g-l2', 'dq-gamma', 'dq-b-o1-prop', 1, l, '2025-01-01T00:00:00.000Z')]);
+    return { pass: out.failedAt === control.length && out.code === '23503', detail: out };
+  }));
 
   await t('DEVOS-DI2-SCHEMA-011', 'A', 'DI-2 permissions exist and the role mapping matches the matrix exactly (platform-admin none; policy authorship admin-only)', async () => {
     const all = [...new Set(Object.values(MATRIX.rolePermissions).flat())];
@@ -361,7 +429,7 @@ async function runDI2AcceptanceSuite() {
       detail: { status: v.status, body: v.body, again: again.status } };
   });
 
-  await t('DEVOS-DI2-POL-004', 'B', 'Invalid criteria are rejected (400): kind, subject, operator, operand shape, duplicate key, empty set, missing label, numeric operator with text', async () => {
+  await t('DEVOS-DI2-POL-004', 'B', 'Invalid criteria are rejected (400): kind, subject, operator, operand shape, duplicate key, empty set, missing label, numeric operator with text, non-boolean allowNotApplicable', async () => {
     if (!W.profile?.id) return { pass: false, detail: 'precondition: profile create failed' };
     const base = { key: 'x', label: 'x', kind: 'CONDITION', subject: 'site.zoning', operator: 'eq', operand: 'R1' };
     const bad = {
@@ -369,6 +437,7 @@ async function runDI2AcceptanceSuite() {
       operator: [{ ...base, operator: 'like' }], betweenShape: [{ ...base, subject: 'site.far', operator: 'between', operand: [5, 1] }],
       inShape: [{ ...base, operator: 'in', operand: 'R1' }], duplicate: [base, { ...base }], empty: [], noLabel: [{ ...base, label: '' }],
       numericText: [{ ...base, subject: 'candidate.proposed_units', operator: 'gte', operand: 'many' }],
+      naFlag: [{ ...base, allowNotApplicable: 'yes' }],
     };
     const statuses = {};
     for (const [k, criteria] of Object.entries(bad)) statuses[k] = (await api(gAdmin, 'PUT', `/api/di/policy-versions/${W.v1?.id}`, { criteria })).status;
@@ -402,6 +471,20 @@ async function runDI2AcceptanceSuite() {
       detail: { v2: v2.status, pub2: pub2.status, list: Array.isArray(list.body) && list.body.map(v => [v.version, v.state]), retire: retire.status, retireAgain: retireAgain.status } };
   });
 
+  await t('DEVOS-DI2-POL-007', 'B', 'A1: allowNotApplicable defaults to false, is returned per criterion, and is part of the published content hash (two versions differing only in it hash differently)', async () => {
+    const prof = await api(gAdmin, 'POST', '/api/di/policies', { name: 'NA permission probe', isDefault: false });
+    if (prof.status !== 201) return { pass: false, detail: `precondition: profile → ${prof.status}` };
+    const plain = [{ key: 'flood', label: 'No flood AE', kind: 'HARD_VETO', subject: 'site.flood_zone', operator: 'neq', operand: 'AE' }];
+    const permitted = [{ ...plain[0], allowNotApplicable: true }];
+    const v1 = await api(gAdmin, 'POST', `/api/di/policies/${prof.body.id}/versions`, { criteria: plain });
+    const p1 = v1.body?.id ? await api(gAdmin, 'POST', `/api/di/policy-versions/${v1.body.id}/publish`) : { status: 0 };
+    const v2 = await api(gAdmin, 'POST', `/api/di/policies/${prof.body.id}/versions`, { criteria: permitted });
+    const p2 = v2.body?.id ? await api(gAdmin, 'POST', `/api/di/policy-versions/${v2.body.id}/publish`) : { status: 0 };
+    return { pass: v1.status === 201 && v1.body.criteria?.[0]?.allowNotApplicable === false && v2.status === 201 && v2.body.criteria?.[0]?.allowNotApplicable === true &&
+      p1.status === 200 && p2.status === 200 && p1.body.contentHash === contentHash(plain) && p2.body.contentHash === contentHash(permitted) && p1.body.contentHash !== p2.body.contentHash,
+      detail: { v1: [v1.status, v1.body?.criteria?.[0]?.allowNotApplicable], v2: [v2.status, v2.body?.criteria?.[0]?.allowNotApplicable], hashes: [p1.body?.contentHash, p2.body?.contentHash] } };
+  });
+
   console.log('\n  --- B. Behavioral (candidate attributes) ---');
   await t('DEVOS-DI2-CAND-001', 'B', 'Candidate attributes persist KNOWN/UNKNOWN/NOT_APPLICABLE with provenance recorded by the caller', async () => {
     const o = await api(gDev, 'POST', '/api/di/opportunities', { name: 'Gamma candidate', concept: { description: 'x' }, provenance: prov() });
@@ -428,12 +511,13 @@ async function runDI2AcceptanceSuite() {
       detail: { put: put.status, history: u } };
   });
 
-  await t('DEVOS-DI2-CAND-003', 'B', 'Invalid attributes are rejected (400): unknown key, non-integer or negative units, KNOWN without value, UNKNOWN with value, SYSTEM_DERIVED', async () => {
+  await t('DEVOS-DI2-CAND-003', 'B', 'Invalid attributes are rejected (400): unknown key, non-integer, text or numeric-string units (A2), negative units, KNOWN without value, UNKNOWN with value, SYSTEM_DERIVED', async () => {
     if (!W.opp?.id) return { pass: false, detail: 'precondition missing' };
     const sends = {
       unknownKey: { irr_target: { value: 12, status: 'KNOWN', provenance: prov() } },
       nonInteger: { proposed_units: { value: 12.5, status: 'KNOWN', provenance: prov() } },
       text: { proposed_units: { value: 'many', status: 'KNOWN', provenance: prov() } },
+      numericString: { proposed_units: { value: '150', status: 'KNOWN', provenance: prov() } },
       negative: { proposed_units: { value: -3, status: 'KNOWN', provenance: prov() } },
       knownNull: { proposed_stories: { value: null, status: 'KNOWN', provenance: prov() } },
       unknownValue: { proposed_stories: { value: 4, status: 'UNKNOWN', provenance: prov() } },
@@ -444,6 +528,29 @@ async function runDI2AcceptanceSuite() {
     const get = await api(gDev, 'GET', `/api/di/opportunities/${W.opp.id}/candidate-attributes`);
     return { pass: get.status === 200 && Object.values(statuses).every(s => s === 400) && get.body?.attributes?.proposed_units?.value === 96 && !('proposed_stories' in (get.body?.attributes || {})),
       detail: statuses };
+  });
+
+  console.log('\n  --- B. Behavioral (location evidence, A3) ---');
+  await t('DEVOS-DI2-LOC-001', 'B', 'A3: location evidence is recorded as versions with provenance through its own API; the frozen DI-1 Property record is not modified', async () => {
+    await withOwner(c => c.query(`INSERT INTO di_properties (id, organization_id, name, region, source_type, recorded_by) VALUES ('dq-g-locprop','dq-gamma','Location probe','ZZ','USER_ENTRY','seed') ON CONFLICT DO NOTHING`));
+    const base = '/api/di/properties/dq-g-locprop/location-evidence';
+    const first = await api(gDev, 'PUT', base, { city: 'Oakland', region: 'CA', postalCode: '94607', country: 'US', provenance: prov('PUBLIC_RECORD') });
+    const second = await api(gDev, 'PUT', base, { city: 'Reno', region: 'NV', postalCode: '89501', country: 'US', provenance: prov() });
+    const current = await api(gViewer, 'GET', base);
+    const hist = await api(gViewer, 'GET', `${base}/history`);
+    const bad = {
+      regionType: (await api(gDev, 'PUT', base, { region: 5, country: 'US', provenance: prov() })).status,
+      noFields: (await api(gDev, 'PUT', base, { provenance: prov() })).status,
+      noProvenance: (await api(gDev, 'PUT', base, { region: 'CA' })).status,
+      system: (await api(gDev, 'PUT', base, { region: 'CA', provenance: prov('SYSTEM_DERIVED') })).status,
+    };
+    const prop = await api(gViewer, 'GET', '/api/di/properties/dq-g-locprop');
+    const e = current.body?.evidence; const h = Array.isArray(hist.body) ? hist.body : [];
+    return { pass: first.status === 200 && first.body?.evidence?.version === 1 && second.status === 200 && second.body?.evidence?.version === 2 &&
+      current.status === 200 && e?.region === 'NV' && e?.city === 'Reno' && e?.postalCode === '89501' && e?.version === 2 && e?.provenance?.recordedBy === gDev &&
+      h.length === 2 && h[0].version === 1 && h[0].region === 'CA' && h[0].provenance?.sourceType === 'PUBLIC_RECORD' && h[1].version === 2 &&
+      Object.values(bad).every(x => x === 400) && prop.status === 200 && prop.body?.region === 'ZZ',
+      detail: { first: first.status, second: second.status, current: [current.status, e], history: h.length, bad, propertyRegion: [prop.status, prop.body?.region] } };
   });
 
   console.log('\n  --- B. Behavioral (qualification oracle) ---');
@@ -493,6 +600,52 @@ async function runDI2AcceptanceSuite() {
         c?.observed?.value === e.units_min.observedValue && c?.observed?.version === e.units_min.observedVersion });
     }
     return { pass: out.every(x => x.ok), detail: out };
+  });
+
+  await t('DEVOS-DI2-LOC-002', 'B', 'A3: property.* criteria read the location evidence effective at asOf (never the current Property region), and the exact evidence id and version used are persisted', async () => {
+    const o = ORACLE.opportunities.find(x => x.id === 'dq-a-o18');
+    const problems = []; const used = [];
+    for (const e of o.evaluations) {
+      const r = await qualify('dq-u-alpha-dev', o.id, { asOf: e.asOf, dryRun: true });
+      problems.push(...checkEvaluation(o, e, r).map(x => `${e.asOf.slice(0, 10)}: ${x}`));
+      used.push(r.body?.inputs?.locationEvidence);
+    }
+    const expectIds = ['dq-a-o18-prop-loc-1', 'dq-a-o18-prop-loc-2'];
+    used.forEach((u, i) => { if (u?.id !== expectIds[i] || u?.version !== i + 1) problems.push(`inputs.locationEvidence[${i}] ${JSON.stringify(u)}`); });
+    const saved = await qualify('dq-u-alpha-dev', o.id, { asOf: o.evaluations[0].asOf });
+    const read = saved.body?.id ? await api('dq-u-alpha-viewer', 'GET', `/api/di/qualifications/${saved.body.id}`) : { status: 0 };
+    const row = saved.body?.id ? (await query(`SELECT inputs->'locationEvidence' AS l FROM di_qualifications WHERE id = $1`, [saved.body.id])).rows[0] : null;
+    if (saved.status !== 201 || read.body?.inputs?.locationEvidence?.id !== expectIds[0] || read.body?.inputs?.locationEvidence?.version !== 1) problems.push(`persisted ${saved.status} ${JSON.stringify(read.body?.inputs)}`);
+    if (!row || row.l?.id !== expectIds[0] || row.l?.version !== 1 || !row.l?.recordedAt) problems.push(`database inputs ${JSON.stringify(row)}`);
+    const none = await qualify('dq-u-alpha-dev', 'dq-a-o19', { asOf, dryRun: true });
+    if (none.status !== 200 || none.body?.inputs?.locationEvidence !== null) problems.push(`o19 inputs.locationEvidence ${JSON.stringify(none.body?.inputs)}`);
+    return { pass: !problems.length, detail: problems.slice(0, 8) };
+  });
+
+  await t('DEVOS-DI2-TYPE-001', 'B', 'A2: a malformed value is rejected on a new write (400), while the same value already stored by a historical import evaluates as TYPE_MISMATCH → INFORMATION_REQUIRED', async () => {
+    const before = await api('dq-u-alpha-dev', 'GET', '/api/di/opportunities/dq-a-o17/candidate-attributes');
+    const write = await api('dq-u-alpha-dev', 'PUT', '/api/di/opportunities/dq-a-o17/candidate-attributes', { attributes: { proposed_units: { value: '150', status: 'KNOWN', provenance: prov() } } });
+    const after = await api('dq-u-alpha-dev', 'GET', '/api/di/opportunities/dq-a-o17/candidate-attributes');
+    const r = await qualify('dq-u-alpha-dev', 'dq-a-o17', { asOf, dryRun: true });
+    const c = (r.body?.criteria || []).find(x => x.key === 'units_min');
+    return { pass: before.status === 200 && before.body?.attributes?.proposed_units?.value === '150' && write.status === 400 &&
+      after.body?.attributes?.proposed_units?.version === 1 && r.status === 200 && r.body.outcome === 'INFORMATION_REQUIRED' && c?.result === 'UNKNOWN' && c?.reason === 'TYPE_MISMATCH' && c?.observed?.value === '150',
+      detail: { before: [before.status, before.body?.attributes?.proposed_units], write: write.status, outcome: r.body?.outcome, units: c } };
+  });
+
+  await t('DEVOS-DI2-GATE0-001', 'B', 'A4: Gate 0 is computed from the site-fact versions in force at asOf and reported separately from the current-status run precondition', async () => {
+    const o = ORACLE.opportunities.find(x => x.id === 'dq-a-o20');
+    const current = await api('dq-u-alpha-dev', 'GET', `/api/di/opportunities/${o.id}/readiness`);
+    const problems = [];
+    for (const e of o.evaluations) {
+      const r = await qualify('dq-u-alpha-dev', o.id, { asOf: e.asOf, dryRun: true });
+      problems.push(...checkEvaluation(o, e, r).map(x => `${e.asOf.slice(0, 10)}: ${x}`));
+      const g = r.body?.gate0 || {}; const rp = r.body?.runPrecondition || {};
+      if (g.basis !== 'SITE_FACTS_AS_OF' || g.asOf !== e.asOf) problems.push(`${e.asOf.slice(0, 10)}: gate0 ${JSON.stringify(g)}`);
+      if (rp.lifecycleStatus !== 'READY_FOR_QUALIFICATION' || rp.satisfied !== true) problems.push(`${e.asOf.slice(0, 10)}: runPrecondition ${JSON.stringify(rp)}`);
+    }
+    return { pass: current.status === 200 && current.body?.status === 'READY_FOR_QUALIFICATION' && !problems.length,
+      detail: { currentReadiness: [current.status, current.body?.status], problems: problems.slice(0, 8) } };
   });
 
   await t('DEVOS-DI2-QUAL-005', 'B', 'Persisted qualification: 201 with id, POLICY_SCREEN authority, pinned version and content hash, evaluator; readable by id and listed', async () => {
@@ -578,7 +731,7 @@ async function runDI2AcceptanceSuite() {
       if (r.body.outcome === 'NO_GO' && !vetoFails.some(c => c.observed?.status === 'KNOWN')) problems.push(`${o.id}: NO_GO without a known failed veto`);
       if (!vetoFails.length && crit.some(c => c.result === 'UNKNOWN') && r.body.outcome !== 'INFORMATION_REQUIRED') problems.push(`${o.id}: unknown input produced ${r.body.outcome}`);
     }
-    const unknownCases = ['dq-a-o8', 'dq-a-o11', 'dq-a-o12'];
+    const unknownCases = ['dq-a-o8', 'dq-a-o11', 'dq-a-o12', 'dq-a-o16', 'dq-a-o17', 'dq-a-o19'];
     for (const id of unknownCases) {
       const r = await qualify('dq-u-alpha-dev', id, { asOf, dryRun: true });
       if (r.body?.outcome !== 'INFORMATION_REQUIRED') problems.push(`${id}: ${r.body?.outcome}`);
@@ -616,11 +769,11 @@ async function runDI2AcceptanceSuite() {
   // ════════════════ C. ADVERSARIAL ════════════════
   console.log('\n  --- C. Adversarial ---');
 
-  await t('DEVOS-DI2-ADV-001', 'C', 'Cross-tenant reads are concealed: policies, versions, qualifications and candidate attributes of another tenant → 404 / absent from lists', async () => {
+  await t('DEVOS-DI2-ADV-001', 'C', 'Cross-tenant reads are concealed: policies, versions, qualifications, candidate attributes and location evidence of another tenant → 404 / absent from lists', async () => {
     if (!P.alpha.profile || !W.q1?.id) return { pass: false, detail: 'precondition: alpha policy/qualification missing' };
     const paths = [`/api/di/policies/${P.alpha.profile.id}`, `/api/di/policies/${P.alpha.profile.id}/versions`, `/api/di/policy-versions/${P.alpha.version.id}`,
       `/api/di/qualifications/${W.q1.id}`, '/api/di/opportunities/dq-a-o6/qualifications', '/api/di/opportunities/dq-a-o1/candidate-attributes',
-      '/api/di/opportunities/dq-a-o1/candidate-attributes/history'];
+      '/api/di/opportunities/dq-a-o1/candidate-attributes/history', '/api/di/properties/dq-a-o1-prop/location-evidence', '/api/di/properties/dq-a-o1-prop/location-evidence/history'];
     const out = {};
     for (const p of paths) out[p] = (await api('dq-u-beta-admin', 'GET', p)).status;
     const list = await api('dq-u-beta-admin', 'GET', '/api/di/policies');
@@ -628,7 +781,7 @@ async function runDI2AcceptanceSuite() {
     return { pass: Object.values(out).every(s => s === 404) && list.status === 200 && list.body.length > 0 && !leak, detail: { out, leak } };
   });
 
-  await t('DEVOS-DI2-ADV-002', 'C', 'Cross-tenant mutations → 404 and nothing changes: profile, version edit/publish/retire, candidate attributes', async () => {
+  await t('DEVOS-DI2-ADV-002', 'C', 'Cross-tenant mutations → 404 and nothing changes: profile, version edit/publish/retire, candidate attributes, location evidence', async () => {
     if (!P.alpha.profile) return { pass: false, detail: 'precondition: alpha policy missing' };
     const versions = await api('dq-u-alpha-admin', 'GET', `/api/di/policies/${P.alpha.profile.id}/versions`);
     const anyVersion = Array.isArray(versions.body) ? versions.body[versions.body.length - 1] : null;
@@ -639,11 +792,13 @@ async function runDI2AcceptanceSuite() {
       publish: anyVersion ? (await api('dq-u-beta-admin', 'POST', `/api/di/policy-versions/${anyVersion.id}/publish`)).status : 'none',
       retire: anyVersion ? (await api('dq-u-beta-admin', 'POST', `/api/di/policy-versions/${anyVersion.id}/retire`)).status : 'none',
       attributes: (await api('dq-u-beta-dev', 'PUT', '/api/di/opportunities/dq-a-o1/candidate-attributes', { attributes: { proposed_units: { value: 1, status: 'KNOWN', provenance: prov() } } })).status,
+      location: (await api('dq-u-beta-dev', 'PUT', '/api/di/properties/dq-a-o1-prop/location-evidence', { region: 'NV', country: 'US', provenance: prov() })).status,
     };
     const prof = await api('dq-u-alpha-admin', 'GET', `/api/di/policies/${P.alpha.profile.id}`);
     const attrs = await api('dq-u-alpha-dev', 'GET', '/api/di/opportunities/dq-a-o1/candidate-attributes');
+    const loc = await api('dq-u-alpha-dev', 'GET', '/api/di/properties/dq-a-o1-prop/location-evidence');
     return { pass: versions.status === 200 && Object.values(attempts).every(s => s === 404) && prof.body?.name === ORACLE.policies.alpha.name && prof.body?.isDefault === true &&
-      attrs.body?.attributes?.proposed_units?.value === 150, detail: attempts };
+      attrs.body?.attributes?.proposed_units?.value === 150 && loc.body?.evidence?.region === 'CA' && loc.body?.evidence?.version === 1, detail: attempts };
   });
 
   await t('DEVOS-DI2-ADV-003', 'C', 'Cross-tenant qualification is refused: another tenant\'s policy version or opportunity → 404', async () => {
@@ -695,12 +850,14 @@ async function runDI2AcceptanceSuite() {
     const ver = prof.body?.id ? await api(gAdmin, 'POST', `/api/di/policies/${prof.body.id}/versions`, { criteria: C1 }) : { body: null };
     const ready = await withOwner(c => c.query(`INSERT INTO di_opportunities (id, organization_id, name, status, concept_description, source_type, recorded_by)
       VALUES ('dq-g-matrix','dq-gamma','Matrix','READY_FOR_QUALIFICATION','x','USER_ENTRY','seed') ON CONFLICT DO NOTHING`).then(() => true).catch(() => false));
+    const prop = await withOwner(c => c.query(`INSERT INTO di_properties (id, organization_id, name, source_type, recorded_by)
+      VALUES ('dq-g-matrix-prop','dq-gamma','Matrix property','USER_ENTRY','seed') ON CONFLICT DO NOTHING`).then(() => 'dq-g-matrix-prop').catch(() => null));
     const qual = await qualify(gAdmin, 'dq-g-matrix', { asOf });
-    const ids = { profileId: prof.body?.id, versionId: ver.body?.id, opportunityId: 'dq-g-matrix', qualificationId: qual.body?.id };
+    const ids = { profileId: prof.body?.id, versionId: ver.body?.id, opportunityId: 'dq-g-matrix', qualificationId: qual.body?.id, propertyId: prop };
     if (Object.values(ids).some(v => !v) || !ready) return { pass: false, detail: { precondition: 'workbench resources missing', ids, qual: qual.status } };
     const problems = [];
     for (const [who, role] of [[gViewer, 'viewer'], [gDev, 'developer']]) {
-      const di1 = role === 'viewer' ? ['opportunities:read'] : ['opportunities:read', 'opportunities:update'];
+      const di1 = role === 'viewer' ? ['opportunities:read', 'properties:read'] : ['opportunities:read', 'opportunities:update', 'properties:read', 'properties:update'];
       const perms = new Set([...MATRIX.rolePermissions[role], ...di1]);
       for (const e of MATRIX.endpoints) {
         if (e.adminLifecycle) continue; // publish/retire mutate state; covered for admin elsewhere
@@ -712,7 +869,7 @@ async function runDI2AcceptanceSuite() {
     return { pass: !problems.length, detail: problems.slice(0, 10) };
   });
 
-  await t('DEVOS-DI2-AUDIT-001', 'SENTINEL', 'EF-3 captures policy authorship, publication, retirement, candidate attributes and qualifications with actor and organization', async () => {
+  await t('DEVOS-DI2-AUDIT-001', 'SENTINEL', 'EF-3 captures policy authorship, publication, retirement, candidate attributes, location evidence and qualifications with actor and organization', async () => {
     const { rows } = await query(`SELECT entity_type, action, actor_user_id FROM audit_events WHERE organization_id = 'dq-alpha'
       AND actor_user_id IN ('dq-u-alpha-admin','dq-u-alpha-dev')`);
     const has = (e, a, actor) => rows.some(r => r.entity_type === e && r.action === a && (!actor || r.actor_user_id === actor));
@@ -724,6 +881,8 @@ async function runDI2AcceptanceSuite() {
     };
     const { rows: g } = await query(`SELECT 1 FROM audit_events WHERE organization_id = 'dq-gamma' AND entity_type = 'di_candidate_attributes' AND action = 'INSERT' AND actor_user_id = 'dq-u-gamma-dev' LIMIT 1`);
     required['candidate attribute recorded'] = g.length === 1;
+    const { rows: l } = await query(`SELECT 1 FROM audit_events WHERE organization_id = 'dq-gamma' AND entity_type = 'di_location_evidence' AND action = 'INSERT' AND actor_user_id = 'dq-u-gamma-dev' LIMIT 1`);
+    required['location evidence recorded'] = l.length === 1;
     return { pass: Object.values(required).every(Boolean), detail: required };
   });
 

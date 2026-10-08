@@ -4,11 +4,13 @@
   "tests": {
     "DEVOS-DI2-SCHEMA-001": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented",
+      "amendment": "A3: six tables (adds di_location_evidence)"
     },
     "DEVOS-DI2-SCHEMA-002": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented",
+      "amendment": "A3: tenant column, FK, index and audit trigger also required on di_location_evidence"
     },
     "DEVOS-DI2-SCHEMA-007": {
       "expected": "RED",
@@ -20,11 +22,13 @@
     },
     "DEVOS-DI2-SCHEMA-009": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented",
+      "amendment": "A1: changing allow_not_applicable on published criteria must be rejected"
     },
     "DEVOS-DI2-SCHEMA-010": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented",
+      "amendment": "A3: location-evidence versions are append-only"
     },
     "DEVOS-DI2-SCHEMA-011": {
       "expected": "RED",
@@ -52,15 +56,18 @@
     },
     "DEVOS-DI2-POL-004": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A1: non-boolean allowNotApplicable \u2192 400"
     },
     "DEVOS-DI2-POL-005": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A1: content-hash formula includes allowNotApplicable"
     },
     "DEVOS-DI2-POL-006": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A1: content-hash formula includes allowNotApplicable"
     },
     "DEVOS-DI2-CAND-001": {
       "expected": "RED",
@@ -72,7 +79,8 @@
     },
     "DEVOS-DI2-CAND-003": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A2: numeric string \"150\" rejected on write"
     },
     "DEVOS-DI2-QUAL-001": {
       "expected": "RED",
@@ -80,7 +88,8 @@
     },
     "DEVOS-DI2-QUAL-002": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A1\u2013A3: oracle adds dq-a-o16, o17, o19; property.region now read from location evidence (current Property region is the sentinel ZZ); alpha entitlement permits NOT_APPLICABLE"
     },
     "DEVOS-DI2-QUAL-003": {
       "expected": "RED",
@@ -92,7 +101,8 @@
     },
     "DEVOS-DI2-QUAL-005": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A1: pinned content hash includes allowNotApplicable"
     },
     "DEVOS-DI2-QUAL-006": {
       "expected": "RED",
@@ -116,15 +126,18 @@
     },
     "DEVOS-DI2-TENANT-POLICY-001": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A3: fixture location now comes from location evidence"
     },
     "DEVOS-DI2-INFORMATION-001": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A1\u2013A3: unknown cases add dq-a-o16, o17, o19"
     },
     "DEVOS-DI2-IMMUTABLE-POLICY-001": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A1: pinned content hash includes allowNotApplicable"
     },
     "DEVOS-DI2-NO-PLATFORM-POLICY-001": {
       "expected": "RED",
@@ -132,11 +145,13 @@
     },
     "DEVOS-DI2-ADV-001": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A3: location-evidence reads concealed cross-tenant"
     },
     "DEVOS-DI2-ADV-002": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A3: cross-tenant location-evidence write \u2192 404, nothing changes"
     },
     "DEVOS-DI2-ADV-003": {
       "expected": "RED",
@@ -152,15 +167,18 @@
     },
     "DEVOS-DI2-ADV-006": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A3: matrix adds three location-evidence endpoints (401 unauthenticated)"
     },
     "DEVOS-DI2-AUTHZ-001": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A3: matrix adds location-evidence endpoints under DI-1 properties:read / properties:update"
     },
     "DEVOS-DI2-AUDIT-001": {
       "expected": "RED",
-      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented"
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented",
+      "amendment": "A3: location-evidence INSERT captured by EF-3"
     },
     "DEVOS-DI2-AUDIT-002": {
       "expected": "GREEN",
@@ -185,6 +203,53 @@
     "DEVOS-DI2-SCHEMA-006": {
       "expected": "RED",
       "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented"
+    },
+    "DEVOS-DI2-SCHEMA-012": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 schema (migration after 007) not implemented: di_location_evidence absent",
+      "amendment": "A3: added in revision 2"
+    },
+    "DEVOS-DI2-POL-007": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented (A1 allowNotApplicable)",
+      "amendment": "A1: added in revision 2"
+    },
+    "DEVOS-DI2-LOC-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 location-evidence API not implemented (PUT/GET 404)",
+      "amendment": "A3: added in revision 2"
+    },
+    "DEVOS-DI2-LOC-002": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented (A3 location evidence at asOf, persisted inputs)",
+      "amendment": "A3: added in revision 2"
+    },
+    "DEVOS-DI2-TYPE-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented (A2: candidate-attributes endpoint absent, so the precondition read fails)",
+      "amendment": "A2: added in revision 2"
+    },
+    "DEVOS-DI2-GATE0-001": {
+      "expected": "RED",
+      "reason": "MISSING CAPABILITY \u2014 DI-2 policy/qualification API not implemented (A4: qualify endpoint absent; DI-1 readiness precondition already READY)",
+      "amendment": "A4: added in revision 2"
     }
-  }
+  },
+  "revision": 2,
+  "revisionHistory": [
+    {
+      "revision": 1,
+      "commit": "93d8ea5",
+      "prediction": "42 RED / 4 GREEN",
+      "actual": "42 RED / 4 GREEN, 0 mismatches",
+      "evidence": "docs/evidence/di2-red-gate-run.txt (preserved unchanged)"
+    },
+    {
+      "revision": 2,
+      "basis": "Founder review of the DI-2 RED gate: CONDITIONAL GO; contract-and-RED-gate amendment A1\u2013A4 authorized, implementation not authorized",
+      "prediction": "48 RED / 4 GREEN (52 tests). The six added tests are RED for missing capability; the amended tests keep their revision-1 expected state; the four guards stay GREEN.",
+      "writtenBefore": "the first revision-2 run",
+      "evidence": "docs/evidence/di2-red-gate-run-r2.txt"
+    }
+  ]
 }

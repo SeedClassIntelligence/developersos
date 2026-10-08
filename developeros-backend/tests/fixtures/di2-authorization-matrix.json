@@ -1,6 +1,6 @@
 {
   "title": "DEVOS-DI-2 authorization matrix",
-  "contract": "docs/DEVOS-DI2-ACCEPTANCE-CONTRACT.md §5–§6",
+  "contract": "docs/DEVOS-DI2-ACCEPTANCE-CONTRACT.md §5–§6 (revision 2: A3 location-evidence endpoints reuse DI-1 properties:read / properties:update)",
   "statusPolicy": { "missingPermission": 403, "foreignOrUnknownId": 404, "forgedOrganizationHeader": 403, "unauthenticated": 401 },
   "rolePermissions": {
     "org-admin": ["policies:read", "policies:manage", "qualifications:read", "qualifications:run"],
@@ -22,6 +22,9 @@
     { "method": "GET", "path": "/api/di/opportunities/:opportunityId/candidate-attributes", "permission": "opportunities:read" },
     { "method": "PUT", "path": "/api/di/opportunities/:opportunityId/candidate-attributes", "permission": "opportunities:update", "body": { "attributes": { "proposed_stories": { "value": 5, "status": "KNOWN", "provenance": { "sourceType": "USER_ENTRY" } } } } },
     { "method": "GET", "path": "/api/di/opportunities/:opportunityId/candidate-attributes/history", "permission": "opportunities:read" },
+    { "method": "GET", "path": "/api/di/properties/:propertyId/location-evidence", "permission": "properties:read", "amendment": "A3" },
+    { "method": "PUT", "path": "/api/di/properties/:propertyId/location-evidence", "permission": "properties:update", "amendment": "A3", "body": { "city": "Matrix", "region": "CA", "country": "US", "provenance": { "sourceType": "USER_ENTRY" } } },
+    { "method": "GET", "path": "/api/di/properties/:propertyId/location-evidence/history", "permission": "properties:read", "amendment": "A3" },
     { "method": "POST", "path": "/api/di/opportunities/:opportunityId/qualify", "permission": "qualifications:run", "body": { "asOf": "2025-06-01T00:00:00.000Z" } },
     { "method": "GET", "path": "/api/di/opportunities/:opportunityId/qualifications", "permission": "qualifications:read" },
     { "method": "GET", "path": "/api/di/qualifications/:qualificationId", "permission": "qualifications:read" }
