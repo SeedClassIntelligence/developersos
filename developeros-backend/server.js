@@ -12,6 +12,14 @@ const auditContext = require('./db/audit-context');
 
 const app = express();
 
+// Behind a TLS-terminating reverse proxy, TRUST_PROXY = number of proxy hops
+// (usually 1) so req.ip / rate limits use the real client address from
+// X-Forwarded-For instead of the proxy's. Unset = trust nothing (direct exposure).
+if (process.env.TRUST_PROXY) {
+  const tp = process.env.TRUST_PROXY.trim();
+  app.set('trust proxy', /^\d+$/.test(tp) ? Number(tp) : tp);
+}
+
 // ── SECURITY HEADERS ───────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
@@ -61,12 +69,6 @@ app.use(cors((req, cb) => {
 }));
 
 // ── RATE LIMITING ──────────────────────────────
-// Behind a reverse proxy / TLS terminator, set TRUST_PROXY (e.g. 1 = one hop)
-// so limits apply per client address instead of to the proxy's address.
-if (process.env.TRUST_PROXY) {
-  const hops = Number(process.env.TRUST_PROXY);
-  app.set('trust proxy', Number.isInteger(hops) ? hops : process.env.TRUST_PROXY);
-}
 const testMode = process.env.TEST_MODE === 'true';
 const credentialLimit = testMode ? 1000 : Number(process.env.RATE_LIMIT_AUTH_MAX || 10);
 const apiLimit = testMode ? 10000 : Number(process.env.RATE_LIMIT_API_MAX || 1000);

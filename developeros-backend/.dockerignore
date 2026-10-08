@@ -1,0 +1,21 @@
+# Secrets and local state never enter the build context
+.env
+.env.*
+!.env.example
+node_modules
+.pgdata*
+*.pgdata*
+logs
+*.log
+.git
+.gitignore
+
+# Not needed at runtime
+tests
+docs/evidence
+legacy
+deploy
+scratch
+*.zip
+Dockerfile
+.dockerignore

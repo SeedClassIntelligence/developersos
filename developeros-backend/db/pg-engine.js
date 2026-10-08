@@ -4,6 +4,13 @@
 // Port / credentials are derived from the most privileged configured URL
 // (ADMIN_DATABASE_URL, then MIGRATION_DATABASE_URL, then DATABASE_URL), so an
 // embedded cluster is never bootstrapped with the runtime role as superuser.
+//
+// The embedded engine (devDependency `embedded-postgres`) is a local
+// development/test convenience only. It is considered ONLY when the configured
+// URL points at a loopback host AND NODE_ENV is not "production". Otherwise
+// (production, a remote or compose host such as db:5432, or
+// DEVOS_EMBEDDED_PG=false) this is a no-op and the caller connects to exactly
+// the configured database, failing loudly if it is unreachable.
 // ══════════════════════════════════════════════════════════════
 
 require('dotenv').config();
@@ -25,6 +32,14 @@ function parseConnection() {
     user: decodeURIComponent(u.username || 'postgres'),
     password: decodeURIComponent(u.password || ''),
   };
+}
+
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+
+function embeddedEngineAllowed(conn) {
+  if (process.env.DEVOS_EMBEDDED_PG === 'false') return false;
+  if (process.env.NODE_ENV === 'production') return false;
+  return LOOPBACK_HOSTS.has(conn.host);
 }
 
 function isPortOpen(port, host = '127.0.0.1') {
@@ -49,7 +64,13 @@ function isPortOpen(port, host = '127.0.0.1') {
 async function ensurePostgresRunning() {
   const conn = parseConnection();
 
+  // Production / non-local hosts: never start or probe a local engine.
+  if (!embeddedEngineAllowed(conn)) {
+    return { status: 'external', host: conn.host, port: conn.port };
+  }
+
   // If the configured port is already open and accepting connections, connect directly
+  // (loopback host verified above; probe IPv4 loopback as before)
   const alreadyOpen = await isPortOpen(conn.port, '127.0.0.1');
   if (alreadyOpen) {
     return { status: 'already-running', port: conn.port };
@@ -64,7 +85,13 @@ async function ensurePostgresRunning() {
 
   isStarting = true;
   try {
-    const EmbeddedPostgres = require('embedded-postgres').default;
+    let EmbeddedPostgres;
+    try {
+      EmbeddedPostgres = require('embedded-postgres').default;
+    } catch (e) {
+      throw new Error(`PostgreSQL is not reachable at ${conn.host}:${conn.port} and the embedded engine ` +
+        '(devDependency "embedded-postgres") is not installed. Start PostgreSQL or run `npm ci` with dev dependencies.');
+    }
     // Tests and deployments may select a short/writable data path. This also
     // avoids native initdb path parsing limitations on Windows while retaining
     // the repository-local directory as the compatibility default.
@@ -111,4 +138,5 @@ module.exports = {
   ensurePostgresRunning,
   stopPostgresEngine,
   parseConnection,
+  embeddedEngineAllowed,
 };

@@ -3,6 +3,13 @@
 .env.local
 .env.production
 .env.*
+# Committed templates (placeholders only, no secrets)
+!.env.example
+!.env.production.example
+
+# Database backups (deploy/backup.sh)
+deploy/backups/
+*.dump
 
 # Logs
 logs/
