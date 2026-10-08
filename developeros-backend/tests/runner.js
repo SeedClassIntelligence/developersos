@@ -15,6 +15,7 @@ const { runEF3AcceptanceSuite } = require('./devos-ef3-acceptance.test');
 const { runDI1AcceptanceSuite } = require('./devos-di1-acceptance.test');
 const { runDI1D1Suite } = require('./devos-di1-d1-partner-integrity.test');
 const { runDI2AcceptanceSuite } = require('./devos-di2-acceptance.test');
+const { runUIAcceptanceSuite } = require('./devos-ui-wp1.test');
 const DI2_BASELINE = require('./fixtures/di2-red-baseline.json');
 const DI1_BASELINE = require('./fixtures/di1-red-baseline.json');
 
@@ -57,6 +58,7 @@ async function main() {
   let di1Res = null;
   let di1d1Res = null;
   let di2Res = null;
+  let uiRes = null;
 
   try {
     // Must run first: it is the first caller of ensureTestDatabase() in the
@@ -95,6 +97,9 @@ async function main() {
     if (target === 'di2' || target === 'all') {
       di2Res = await runDI2AcceptanceSuite();
       di2Res.baseline = compareDI1Baseline(di2Res, DI2_BASELINE);
+    }
+    if (target === 'ui' || target === 'all') {
+      uiRes = await runUIAcceptanceSuite();
     }
   } finally {
     await stopTestServer();
@@ -166,6 +171,10 @@ async function main() {
     if (b.unexpectedRed.length) console.log(`       unexpected RED      : ${b.unexpectedRed.join(', ')}`);
     if (b.notRun.length) console.log(`       not run             : ${b.notRun.join(', ')}`);
   }
+  if (uiRes) {
+    const statusLabel = uiRes.failedCount === 0 ? '[GREEN — BROWSER VERIFIED]' : `[${uiRes.failedCount} FAILED]`;
+    console.log(`  11. DEVOS-UI (WP1)         : ${uiRes.passedCount}/${uiRes.total} PASSED  ${statusLabel}`);
+  }
   console.log('===============================================================\n');
   const failed =
     (cleanDbRes && cleanDbRes.failedCount > 0) ||
@@ -178,7 +187,8 @@ async function main() {
     (ef3Res && ef3Res.failedCount > 0) ||
     (di1Res && di1Res.baseline.mismatches > 0) ||
     (di1d1Res && di1d1Res.failedCount > 0) ||
-    (di2Res && di2Res.baseline.mismatches > 0);
+    (di2Res && di2Res.baseline.mismatches > 0) ||
+    (uiRes && uiRes.failedCount > 0);
   process.exit(failed ? 1 : 0);
 }
 

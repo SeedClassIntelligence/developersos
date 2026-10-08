@@ -85,6 +85,16 @@ router.post('/switch-context', protect, async (req, res, next) => {
   }
 });
 
+// ── GET /api/auth/memberships ──────────────────
+// Organizations the signed-in user belongs to (for the organization switcher).
+router.get('/memberships', protect, async (req, res, next) => {
+  try {
+    res.json(await securityRepo.listMembershipOrganizations(req.user.id));
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── GET /api/auth/me ───────────────────────────
 router.get('/me', protect, async (req, res) => {
   try {

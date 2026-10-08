@@ -160,7 +160,7 @@ function generateAlerts(filterProjectId, data) {
             projectName: proj?.name || '',
             severity: daysLeft < 30 ? 'critical' : 'warning',
             type: 'capital-deadline',
-            title: `${src.name} expires in ${daysLeft} days`,
+            title: daysLeft < 0 ? `${src.name} deadline passed ${-daysLeft} days ago` : `${src.name} expires in ${daysLeft} days`,
             desc: src.alert || 'Capital commitment deadline approaching. Requires immediate action.',
             action: 'capital',
             actionLabel: 'Review Capital Stack',

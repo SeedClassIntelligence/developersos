@@ -21,7 +21,8 @@
     "test:di2": "node tests/runner.js di2",
     "check": "node scripts/check-js.js",
     "build": "npm run check",
-    "test:gate": "npm run check && node tests/runner.js all"
+    "test:gate": "npm run check && node tests/runner.js all",
+    "test:ui": "node tests/runner.js ui"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -39,6 +40,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "playwright": "1.56.1"
   }
 }

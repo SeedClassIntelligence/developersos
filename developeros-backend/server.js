@@ -17,7 +17,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'", "'unsafe-inline'"],
+      scriptSrc:  ["'self'"],
       styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc:    ["'self'", "https://fonts.gstatic.com", "data:"],
       imgSrc:     ["'self'", 'data:'],
@@ -35,18 +35,29 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:8080,http:
   .map(o => o.trim())
   .filter(Boolean);
 
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      return cb(null, true);
-    }
-    const err = new Error(`CORS blocked: ${origin}`);
-    err.status = 403;
-    cb(err);
-  },
-  methods: ['GET','POST','PUT','PATCH','DELETE'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  credentials: true,
+// The UI is served by this server, so a request from the server's own origin
+// is same-origin and always allowed (browsers send Origin on same-origin POSTs).
+function isSameOrigin(req, origin) {
+  try {
+    return new URL(origin).host === req.get('host');
+  } catch (e) {
+    return false;
+  }
+}
+
+app.use(cors((req, cb) => {
+  const origin = req.get('origin');
+  const options = {
+    methods: ['GET','POST','PUT','PATCH','DELETE'],
+    allowedHeaders: ['Content-Type','Authorization'],
+    credentials: true,
+  };
+  if (!origin || isSameOrigin(req, origin) || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    return cb(null, { ...options, origin: true });
+  }
+  const err = new Error(`CORS blocked: ${origin}`);
+  err.status = 403;
+  cb(err);
 }));
 
 // ── RATE LIMITING ──────────────────────────────
@@ -90,6 +101,7 @@ app.use('/api/messages',  protect, resolveOrganizationContext, require('./routes
 app.use('/api/documents', protect, resolveOrganizationContext, require('./routes/documents'));
 app.use('/api/alerts',    protect, resolveOrganizationContext, require('./routes/alerts'));
 app.use('/api/team',      protect, resolveOrganizationContext, require('./routes/team'));
+app.use('/api/partners',  protect, resolveOrganizationContext, require('./routes/partners'));
 app.use('/api/audit',     protect, resolveOrganizationContext, require('./routes/audit'));
 app.use('/api/di',        protect, resolveOrganizationContext, require('./routes/di'));
 app.use('/api/admin',     protect, resolveOrganizationContext, adminOnly, require('./routes/admin'));
