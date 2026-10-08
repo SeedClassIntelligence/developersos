@@ -1,5 +1,7 @@
 # DeveloperOS Master Gate Inventory
 
+> **Superseded as the primary status document (2026-10-08).** Product status, remaining work and execution plan live in `docs/DEVOS-PRODUCT-COMPLETION-TRACKER.md` and `docs/DEVOS-PRODUCT-COMPLETION-ASSESSMENT.md`. This file is kept as the gate history.
+
 **Inventory date:** 2026-10-07  
 **Current position:** DEVOS-DI-1 **ACCEPTED and FROZEN** (independent review, after DI1-D1 remediation at `8bc4e3a`). DI-2 RED gate revision 1 (46 tests, 42 RED / 4 GREEN) reviewed: **CONDITIONAL GO**. Contract-and-RED-gate amendment (revision 2, A1–A4) produced: 52 tests, 48 RED / 4 GREEN, matching prediction; awaiting review. DI-2 implementation **not authorized**.  
 **Current disposition:** EF-0, EF-1, EF-2, EF-3 **ACCEPTED**. EF-3 accepted by independent review after remediation (PR #1, merge `ca69d64`). EF-3 is **frozen**: no further audit-ledger functionality without a new authorization.  
