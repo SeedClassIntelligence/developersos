@@ -42,6 +42,11 @@ async function getOrganizations() {
   }));
 }
 
+async function organizationNameExists(name) {
+  const { rowCount } = await query('SELECT 1 FROM organizations WHERE LOWER(name) = LOWER($1)', [name]);
+  return rowCount > 0;
+}
+
 // Creates the organization and a pending org-admin invitation in one transaction.
 async function provisionOrganization({ name, type, adminEmail, createdBy }) {
   return transaction(async client => {
@@ -81,4 +86,5 @@ module.exports = {
   getOrganizations,
   getOrgById,
   provisionOrganization,
+  organizationNameExists,
 };

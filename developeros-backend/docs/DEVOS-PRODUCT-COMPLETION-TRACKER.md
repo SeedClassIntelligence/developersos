@@ -5,9 +5,9 @@ This is the single source of truth for product status. It is updated at every wo
 - Gate history: `docs/DEVOS-MASTER-GATE-INVENTORY.md`.
 
 **Last updated:** 2026-10-08
-**Baseline:** `main` @ `ca69d64` + [PR #2](https://github.com/SeedClassIntelligence/developersos/pull/2) (DI-1 + DI1-D1, green, awaiting merge)
+**Baseline:** `main` @ `03cc446` (accepted foundation, DI-2 spec and assessment merged via PR #3)
 **Working line:** `claude/nice-fermat-5jwzsr`
-**Regression gate:** 278/278 GREEN (245 accepted backend + 33 UI browser tests: 18 WP1, 15 WP3), DI-2 locked at baseline
+**Regression gate:** 295/295 GREEN (245 accepted + 50 new: 18 WP1 UI, 15 WP3 UI, 17 WP2 access), DI-2 locked at baseline
 
 ## Finished (accepted, tested, backend only unless stated)
 - **EF-1:** PostgreSQL persistence and migrations
@@ -39,8 +39,26 @@ This is the single source of truth for product status. It is updated at every wo
   - Runs on the frozen DI-1 API with no backend change.
   - Proven by 15 browser tests (gate 12), cross-checked against the API.
 
+- **WP2 Tenant provisioning & onboarding (2026-10-08):**
+  - Platform administrators create organizations and invite the first administrator. A CLI bootstraps the first platform administrator.
+  - Members directory with role changes and deactivation, scoped to the organization and effective immediately. Self-lockout is blocked, and an organization can never be left without an administrator, even under concurrent changes.
+  - Invitations: list, revoke, duplicate refusal, and email delivery (any SMTP provider) with a copy-link fallback.
+  - Self-service password reset by email, with an operator link fallback.
+  - Audit trail viewer with in-app chain verification.
+  - Proven by 17 API and browser tests (gate 13).
+- **WP9 Production readiness, provider-neutral part (2026-10-08):**
+  - Non-root, read-only container image.
+  - Compose stack (database, one-shot migrate, app) with owner and runtime credentials separated.
+  - Secret generator; backup and verified restore drill (with the audit signing key); rewritten README and runbook.
+  - Fixed production defect: the app tried to start an embedded PostgreSQL instead of connecting to the configured database.
+  - Verified in containers here, from an empty database:
+    - migrations 001–008;
+    - bootstrap of the first platform administrator;
+    - a tenant provisioned in the UI;
+    - the first administrator signing in, recording a property and an opportunity, and inviting a developer.
+  - **Remaining for WP9:** choosing a deployment target (§8.4), TLS/hosting, monitoring and alerting, and a staging environment.
+
 ## Underway
-- **WP9 Production readiness:** the provider-neutral part (container image, compose stack, production start sequence, runbook).
 - **WP4 Qualification (DI-2):** next on the critical path. It is implementation work against the existing 52-test contract, and starts once the four open points in assessment §8.1 are confirmed (or the recommended defaults are accepted).
 
 ## Blocked / awaiting founder
@@ -51,7 +69,7 @@ This is the single source of truth for product status. It is updated at every wo
 | WP5 Underwriting | V1 metric set (§8.2) |
 | WP6 Decision | V1 decision authority (§8.3) |
 | WP9 Deploy | Deployment target (§8.4) |
-| WP2 Email | Email provider (§8.5) |
+| WP2 Email | Email provider choice (§8.5). The code works with any SMTP provider; this is a configuration decision only |
 
 ## Next, in order
 | WP | Package | Status | User-operable? |
@@ -61,10 +79,10 @@ This is the single source of truth for product status. It is updated at every wo
 | WP4 | Qualification (DI-2) + screens | Queued; needs §8.1 | — |
 | WP5 | Underwriting V1 | Queued; needs §8.2 | — |
 | WP6 | Governed Decision & Project Authorization | Queued; needs §8.3 | — |
-| WP2 | Tenant provisioning & onboarding | Parallel lane B | — |
+| WP2 | Tenant provisioning & onboarding | **Done** | Yes: provisioning, invitations, members, reset, audit |
 | WP7 | Execution & collaboration wiring, document storage | Parallel lane B | — |
 | WP8 | Portfolio monitoring | After WP6/WP7 | — |
-| WP9 | Production readiness | Parallel lane C (start now) | — |
+| WP9 | Production readiness | Container/ops **done**; hosting needs §8.4 | Deployable (compose) |
 | WP10 | Tenant 001 (KG Development) go-live | Final | — |
 
 ## Workflow operability (target: all ✓ for V1)

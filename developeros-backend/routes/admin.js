@@ -38,6 +38,9 @@ router.post('/orgs', requirePermission('platform:orgs:manage'), async (req, res,
     if (typeof adminEmail !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adminEmail.trim())) {
       return res.status(400).json({ error: 'adminEmail must be a valid email address' });
     }
+    if (await adminRepo.organizationNameExists(name.trim())) {
+      return res.status(409).json({ error: 'An organization with this name already exists' });
+    }
     const { organization, invitation } = await adminRepo.provisionOrganization({
       name: name.trim(), type: type ? type.trim() : null, adminEmail: adminEmail.trim(), createdBy: req.user.id,
     });

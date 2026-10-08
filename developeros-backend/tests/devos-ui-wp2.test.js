@@ -207,6 +207,7 @@ async function runAccessSuite() {
     const invalid = await api(plat, 'POST', '/api/admin/orgs', { name: 'X', adminEmail: 'not-an-email' });
     const firstAdmin = `founder.${stamp}@acc.test`;
     const created = await api(plat, 'POST', '/api/admin/orgs', { name: `Coastal Builders ${stamp}`, type: 'developer', adminEmail: firstAdmin });
+    const duplicate = await api(plat, 'POST', '/api/admin/orgs', { name: `coastal builders ${stamp}`, adminEmail: `other.${stamp}@acc.test` });
     const link = linkIn(lastMailTo(firstAdmin));
     const acc = await apiRequest('POST', '/api/invitations/accept', { body: { token: tokenFromLink(link), password: 'founder-pass-1' } });
     const founder = await tokenOf(firstAdmin, 'founder-pass-1');
@@ -215,10 +216,10 @@ async function runAccessSuite() {
     const orgs = await api(plat, 'GET', '/api/admin/orgs');
     const listed = (orgs.body || []).find(o => o.id === created.body.organization.id);
     const platProjects = await api(plat, 'GET', '/api/projects');
-    return { pass: denied.status === 403 && invalid.status === 400 && created.status === 201 && created.body.invitation.delivery === 'email' && !!link &&
+    return { pass: denied.status === 403 && invalid.status === 400 && created.status === 201 && duplicate.status === 409 && created.body.invitation.delivery === 'email' && !!link &&
       acc.status === 201 && ctx.body.organizationId === created.body.organization.id && ctx.body.roleId === 'org-admin' && projects.status === 200 && projects.body.length === 0 &&
       listed && listed.users === 1 && platProjects.status === 200 && !(platProjects.body || []).some(p => p.organizationId === 'org1'),
-      detail: { denied: denied.status, invalid: invalid.status, created: created.status, accept: acc.status, role: ctx.body.roleId, listed } };
+      detail: { denied: denied.status, invalid: invalid.status, created: created.status, duplicate: duplicate.status, accept: acc.status, role: ctx.body.roleId, listed } };
   });
 
   await t('DEVOS-ACC-STATS-001', 'Platform statistics are computed from live data (no fabricated uptime figure; accounts are real memberships)', async () => {
