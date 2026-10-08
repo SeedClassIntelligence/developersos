@@ -135,7 +135,7 @@ if (require.main === module) {
   runMigrations()
     .then(() => process.exit(0))
     .catch(err => {
-      console.error('[MIGRATE] Migration failed:', err.message);
+      console.error('[MIGRATE] Migration failed:', (err && err.message) || String(err));
       process.exit(1);
     });
 }

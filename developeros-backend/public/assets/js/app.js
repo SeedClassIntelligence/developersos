@@ -1,91 +1,127 @@
 // ═══════════════════════════════════════════════
-// APP.JS — Bootstrap
-// Runs on DOMContentLoaded. Decides whether
-// to show landing or app shell.
+// app.js — bootstrap and route rendering
 // ═══════════════════════════════════════════════
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (state.isAuthenticated) {
-    enterApp();
-  } else {
-    renderLanding();
+(function (global) {
+  const Pages = global.Pages;
+  let renderSeq = 0;
+  let restored = false;
+  let intendedPath = null;
+
+  // Public routes
+  Router.add('/login', { name: 'login', page: Pages.login, public: true });
+  Router.add('/accept-invite', { name: 'accept-invite', page: Pages.acceptInvite, public: true });
+  Router.add('/forgot-password', { name: 'forgot-password', page: Pages.forgotPassword, public: true });
+  Router.add('/reset-password', { name: 'reset-password', page: Pages.resetPassword, public: true });
+  // Signed-in routes
+  Router.add('/portfolio', { name: 'portfolio', page: Pages.portfolio });
+  Router.add('/alerts', { name: 'alerts', page: Pages.alerts });
+  Router.add('/team', { name: 'team', page: Pages.team });
+  Router.add('/platform', { name: 'platform', page: Pages.platform });
+  Router.add('/audit', { name: 'audit', page: Pages.audit });
+  // Development Intelligence (fixed paths before parameterised ones)
+  Router.add('/intelligence/opportunities', { name: 'opportunities', page: Pages.opportunities, area: 'opportunities' });
+  Router.add('/intelligence/opportunities/new', { name: 'opportunity-new', page: Pages.opportunityNew, area: 'opportunities' });
+  Router.add('/intelligence/opportunities/:id', { name: 'opportunity', page: Pages.opportunity, area: 'opportunities' });
+  Router.add('/intelligence/properties', { name: 'properties', page: Pages.properties, area: 'properties' });
+  Router.add('/intelligence/properties/new', { name: 'property-new', page: Pages.propertyNew, area: 'properties' });
+  Router.add('/intelligence/properties/:id', { name: 'property', page: Pages.property, area: 'properties' });
+  Router.add('/intelligence/relationships', { name: 'relationships', page: Pages.relationships, area: 'relationships' });
+  Router.add('/intelligence/findings', { name: 'findings', page: Pages.findings, area: 'findings' });
+  Router.add('/projects/:projectId', { name: 'project', page: Pages.project, project: true, section: '' });
+  for (const section of ['tasks', 'permits', 'contracts', 'capital', 'messages', 'documents']) {
+    Router.add(`/projects/:projectId/${section}`, { name: section, page: Pages[section], project: true, section });
   }
-});
 
-// ── UTILITY FUNCTIONS (used across all pages) ──
+  function showShell(signedIn) {
+    document.getElementById('auth-root').hidden = signedIn;
+    document.getElementById('app-shell').hidden = !signedIn;
+  }
 
-function fmt(n) {
-  if (n >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000)    return '$' + (n/1000).toFixed(0) + 'K';
-  return '$' + n;
-}
+  async function render() {
+    const seq = ++renderSeq;
+    const { path, query } = Router.current();
+    const routeKey = location.hash.replace(/^#/, '') || '/';
 
-function phaseName(n) {
-  return ['','Predevelopment','Entitlements','Design Development','Financing','Construction','Stabilization'][n] || '';
-}
+    // Restore a stored session once per page load before routing.
+    if (!restored) {
+      restored = true;
+      if (Api.hasToken()) {
+        try { await Session.load(); } catch (err) { Session.clear(); }
+      }
+    }
 
-function statusColor(s) {
-  return { 'on-track': 'var(--green)', 'at-risk': 'var(--amber)', 'blocked': 'var(--red)' }[s] || 'var(--dim)';
-}
+    const matched = Router.match(path);
+    if (!matched) return Router.replace(Session.signedIn ? '/portfolio' : '/login');
+    const { route, params } = matched;
 
-function statusLabel(s) {
-  return { 'on-track': 'On Track', 'at-risk': 'At Risk', 'blocked': 'Blocked' }[s] || s;
-}
+    if (!route.public && !Session.signedIn) {
+      intendedPath = path;
+      return Router.replace('/login');
+    }
+    if (route.name === 'login' && Session.signedIn) return Router.replace('/portfolio');
 
-function disciplineTag(d) {
-  const map = {
-    arch:        { label: 'Arch',       class: 'tag-arch' },
-    civil:       { label: 'Civil',      class: 'tag-civil' },
-    structural:  { label: 'Structural', class: 'tag-struct' },
-    landscape:   { label: 'Landscape',  class: 'tag-land' },
-    mep:         { label: 'MEP',        class: 'tag-mep' },
-    survey:      { label: 'Survey',     class: 'tag-survey' },
-    environmental:{ label: 'Env',       class: 'tag-env' },
+    const ctx = { route, params, query, project: null };
+
+    if (route.public) {
+      showShell(false);
+      const root = document.getElementById('auth-root');
+      mount(root, await route.page.render(ctx));
+      if (route.page.after) route.page.after(ctx);
+      return;
+    }
+
+    showShell(true);
+    const main = document.getElementById('app');
+    // data-ready names the route (path and query) whose content or error is shown.
+    main.dataset.ready = '';
+    main.setAttribute('aria-busy', 'true');
+    mount(main, UI.loading());
+    try {
+      if (route.project) {
+        ctx.project = await Store.getProject(params.projectId);
+        Store.currentProjectId = ctx.project.id;
+      }
+      await Shell.render(ctx);
+      const view = await route.page.render(ctx);
+      if (seq !== renderSeq) return; // a newer navigation won
+      mount(main, view);
+      main.dataset.ready = routeKey;
+      main.removeAttribute('aria-busy');
+      document.title = `${route.page.title ? route.page.title(ctx) + ' · ' : ''}DeveloperOS`;
+      main.scrollTop = 0;
+      if (route.page.after) route.page.after(ctx);
+    } catch (err) {
+      if (seq !== renderSeq) return;
+      if (!Session.signedIn) return; // session ended mid-render; the 401 handler routes to login
+      await Shell.render(ctx).catch(() => {});
+      mount(main, UI.error(err));
+      main.dataset.ready = routeKey;
+      main.removeAttribute('aria-busy');
+    }
+  }
+
+  // After sign-in, return to the page the user originally asked for.
+  global.App = {
+    afterSignIn() {
+      const target = intendedPath && intendedPath !== '/login' ? intendedPath : '/portfolio';
+      intendedPath = null;
+      Router.go(target);
+    },
+    rerender: render,
   };
-  const t = map[d] || { label: d, class: '' };
-  return `<span class="tc-tag ${t.class}">${t.label}</span>`;
-}
 
-function partnerName(partnerId) {
-  if (!partnerId) return 'Unassigned';
-  const p = (state.partners || []).find(p => p.id === partnerId);
-  return p ? p.name : partnerId;
-}
+  Api.onUnauthorized(() => {
+    if (!Session.signedIn) return;
+    Session.clear();
+    Store.reset();
+    intendedPath = Router.current().path;
+    UI.toast('Your session has ended. Please sign in again.', 'error');
+    Router.replace('/login');
+  });
 
-function partnerInitials(partnerId) {
-  if (!partnerId) return '?';
-  const p = (state.partners || []).find(p => p.id === partnerId);
-  return p ? p.initials : '??';
-}
+  Actions.onClick('retry', () => render());
 
-function contractStatus(contractId) {
-  if (!contractId) return { ok: false, label: 'No Contract', badge: 'badge-red' };
-  const c = state.contracts.find(c => c.id === contractId);
-  if (!c) return { ok: false, label: 'No Contract', badge: 'badge-red' };
-  if (c.status === 'executed') return { ok: true, label: '✓ Executed', badge: 'badge-green' };
-  if (c.status === 'pending')  return { ok: false, label: '⏳ Pending', badge: 'badge-amber' };
-  return { ok: false, label: '❌ Missing', badge: 'badge-red' };
-}
-
-function roleBadge(role) {
-  const map = {
-    developer:    'badge-gold',
-    architect:    'badge-gold',
-    civil:        'badge-blue',
-    structural:   'badge-blue',
-    landscape:    'badge-navy',
-    contractor:   'badge-amber',
-    municipal:    'badge-navy',
-    investor:     'badge-green',
-    nonprofit:    'badge-teal',
-  };
-  return `<span class="badge ${map[role]||'badge-navy'}">${role}</span>`;
-}
-
-function severityClass(s) {
-  return { critical: 'alert-red', warning: 'alert-amber', info: 'alert-blue' }[s] || 'alert-blue';
-}
-
-function severityIcon(s) {
-  return { critical: '🔴', warning: '🟡', info: '🔵' }[s] || '🔵';
-}
+  window.addEventListener('hashchange', render);
+  document.addEventListener('DOMContentLoaded', render);
+})(window);

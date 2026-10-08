@@ -62,4 +62,27 @@ async function accept({ token, password }) {
   });
 }
 
-module.exports = { create, accept };
+// Pending and recent invitations of an organization. Never returns token material.
+async function list(organizationId) {
+  const { rows } = await query(`
+    SELECT i.id, i.email, i.role_id, r.name AS role_name, i.status, i.expires_at, i.created_at, i.accepted_at
+    FROM invitations i JOIN roles r ON r.id = i.role_id
+    WHERE i.organization_id = $1 AND (i.status = 'PENDING' OR i.created_at > NOW() - INTERVAL '30 days')
+    ORDER BY i.created_at DESC`, [organizationId]);
+  return rows.map(r => ({
+    id: r.id, email: r.email, roleId: r.role_id, roleName: r.role_name,
+    status: r.status === 'PENDING' && new Date(r.expires_at) <= new Date() ? 'EXPIRED' : r.status,
+    expiresAt: r.expires_at, createdAt: r.created_at, acceptedAt: r.accepted_at,
+  }));
+}
+
+// PENDING → REVOKED within the organization. Returns { notFound } or { conflict } or { revoked }.
+async function revoke(organizationId, id) {
+  const { rows } = await query(`UPDATE invitations SET status = 'REVOKED'
+    WHERE organization_id = $1 AND id = $2 AND status = 'PENDING' RETURNING id`, [organizationId, id]);
+  if (rows[0]) return { revoked: true };
+  const { rowCount } = await query('SELECT 1 FROM invitations WHERE organization_id = $1 AND id = $2', [organizationId, id]);
+  return rowCount ? { conflict: 'Only a pending invitation can be revoked' } : { notFound: true };
+}
+
+module.exports = { create, accept, list, revoke };

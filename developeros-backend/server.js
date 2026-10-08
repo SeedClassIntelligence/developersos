@@ -12,12 +12,20 @@ const auditContext = require('./db/audit-context');
 
 const app = express();
 
+// Behind a TLS-terminating reverse proxy, TRUST_PROXY = number of proxy hops
+// (usually 1) so req.ip / rate limits use the real client address from
+// X-Forwarded-For instead of the proxy's. Unset = trust nothing (direct exposure).
+if (process.env.TRUST_PROXY) {
+  const tp = process.env.TRUST_PROXY.trim();
+  app.set('trust proxy', /^\d+$/.test(tp) ? Number(tp) : tp);
+}
+
 // ── SECURITY HEADERS ───────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'", "'unsafe-inline'"],
+      scriptSrc:  ["'self'"],
       styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc:    ["'self'", "https://fonts.gstatic.com", "data:"],
       imgSrc:     ["'self'", 'data:'],
@@ -35,25 +43,40 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:8080,http:
   .map(o => o.trim())
   .filter(Boolean);
 
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      return cb(null, true);
-    }
-    const err = new Error(`CORS blocked: ${origin}`);
-    err.status = 403;
-    cb(err);
-  },
-  methods: ['GET','POST','PUT','PATCH','DELETE'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  credentials: true,
+// The UI is served by this server, so a request from the server's own origin
+// is same-origin and always allowed (browsers send Origin on same-origin POSTs).
+function isSameOrigin(req, origin) {
+  try {
+    return new URL(origin).host === req.get('host');
+  } catch (e) {
+    return false;
+  }
+}
+
+app.use(cors((req, cb) => {
+  const origin = req.get('origin');
+  const options = {
+    methods: ['GET','POST','PUT','PATCH','DELETE'],
+    allowedHeaders: ['Content-Type','Authorization'],
+    credentials: true,
+  };
+  if (!origin || isSameOrigin(req, origin) || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    return cb(null, { ...options, origin: true });
+  }
+  const err = new Error(`CORS blocked: ${origin}`);
+  err.status = 403;
+  cb(err);
 }));
 
 // ── RATE LIMITING ──────────────────────────────
-const authLimit = process.env.TEST_MODE === 'true' ? 1000 : 10;
-const apiLimit = process.env.TEST_MODE === 'true' ? 10000 : 100;
+const testMode = process.env.TEST_MODE === 'true';
+const credentialLimit = testMode ? 1000 : Number(process.env.RATE_LIMIT_AUTH_MAX || 10);
+const apiLimit = testMode ? 10000 : Number(process.env.RATE_LIMIT_API_MAX || 1000);
 app.use('/api/', rateLimit({ windowMs: 15*60*1000, max: apiLimit, message: { error: 'Too many requests' } }));
-app.use('/api/auth/', rateLimit({ windowMs: 15*60*1000, max: authLimit, message: { error: 'Too many login attempts. Try again in 15 minutes.' } }));
+// The strict limit guards credential endpoints only; session reads (/api/auth/me,
+// /context, /memberships) run on every page load and fall under the API limit.
+const credentialLimiter = rateLimit({ windowMs: 15*60*1000, max: credentialLimit, message: { error: 'Too many attempts. Try again in 15 minutes.' } });
+app.use(['/api/auth/login', '/api/auth/register', '/api/auth/password-reset', '/api/auth/change-password', '/api/invitations/accept'], credentialLimiter);
 
 // ── LOGGING ────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -90,6 +113,8 @@ app.use('/api/messages',  protect, resolveOrganizationContext, require('./routes
 app.use('/api/documents', protect, resolveOrganizationContext, require('./routes/documents'));
 app.use('/api/alerts',    protect, resolveOrganizationContext, require('./routes/alerts'));
 app.use('/api/team',      protect, resolveOrganizationContext, require('./routes/team'));
+app.use('/api/partners',  protect, resolveOrganizationContext, require('./routes/partners'));
+app.use('/api/members',   protect, resolveOrganizationContext, require('./routes/members'));
 app.use('/api/audit',     protect, resolveOrganizationContext, require('./routes/audit'));
 app.use('/api/di',        protect, resolveOrganizationContext, require('./routes/di'));
 app.use('/api/admin',     protect, resolveOrganizationContext, adminOnly, require('./routes/admin'));

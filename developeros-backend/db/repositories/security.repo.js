@@ -53,4 +53,23 @@ async function resolveActiveMembership(userId, organizationId) {
   };
 }
 
-module.exports = { findCurrentIdentity, listActiveMemberships, resolveActiveMembership };
+// Organizations the user may switch into, for the organization selector.
+// Carries display data only; authority is always re-resolved per request.
+async function listMembershipOrganizations(userId) {
+  const { rows } = await query(`
+    SELECT m.organization_id, o.name AS organization_name, m.role_id, r.name AS role_name
+    FROM memberships m
+    JOIN organizations o ON o.id = m.organization_id
+    JOIN roles r ON r.id = m.role_id
+    WHERE m.user_id = $1 AND m.status = 'ACTIVE'
+    ORDER BY o.name, m.organization_id
+  `, [userId]);
+  return rows.map(row => ({
+    organizationId: row.organization_id,
+    organizationName: row.organization_name,
+    roleId: row.role_id,
+    roleName: row.role_name,
+  }));
+}
+
+module.exports = { findCurrentIdentity, listActiveMemberships, resolveActiveMembership, listMembershipOrganizations };

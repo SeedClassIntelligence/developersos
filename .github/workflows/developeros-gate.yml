@@ -70,6 +70,11 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      # The UI gate drives the real application in headless Chromium, using
+      # the browser build that matches the locked Playwright version.
+      - name: Install headless Chromium for the UI gate
+        run: npx playwright install --with-deps chromium
+
       - name: Generate per-run JWT secret
         run: |
           secret=$(node -e "console.log(require('crypto').randomBytes(48).toString('hex'))")

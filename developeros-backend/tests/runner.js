@@ -15,6 +15,9 @@ const { runEF3AcceptanceSuite } = require('./devos-ef3-acceptance.test');
 const { runDI1AcceptanceSuite } = require('./devos-di1-acceptance.test');
 const { runDI1D1Suite } = require('./devos-di1-d1-partner-integrity.test');
 const { runDI2AcceptanceSuite } = require('./devos-di2-acceptance.test');
+const { runUIAcceptanceSuite } = require('./devos-ui-wp1.test');
+const { runUIWP3Suite } = require('./devos-ui-wp3.test');
+const { runAccessSuite } = require('./devos-ui-wp2.test');
 const DI2_BASELINE = require('./fixtures/di2-red-baseline.json');
 const DI1_BASELINE = require('./fixtures/di1-red-baseline.json');
 
@@ -57,6 +60,9 @@ async function main() {
   let di1Res = null;
   let di1d1Res = null;
   let di2Res = null;
+  let uiRes = null;
+  let ui3Res = null;
+  let accRes = null;
 
   try {
     // Must run first: it is the first caller of ensureTestDatabase() in the
@@ -95,6 +101,15 @@ async function main() {
     if (target === 'di2' || target === 'all') {
       di2Res = await runDI2AcceptanceSuite();
       di2Res.baseline = compareDI1Baseline(di2Res, DI2_BASELINE);
+    }
+    if (target === 'ui' || target === 'all') {
+      uiRes = await runUIAcceptanceSuite();
+    }
+    if (target === 'ui3' || target === 'ui' || target === 'all') {
+      ui3Res = await runUIWP3Suite();
+    }
+    if (target === 'access' || target === 'ui' || target === 'all') {
+      accRes = await runAccessSuite();
     }
   } finally {
     await stopTestServer();
@@ -166,6 +181,18 @@ async function main() {
     if (b.unexpectedRed.length) console.log(`       unexpected RED      : ${b.unexpectedRed.join(', ')}`);
     if (b.notRun.length) console.log(`       not run             : ${b.notRun.join(', ')}`);
   }
+  if (uiRes) {
+    const statusLabel = uiRes.failedCount === 0 ? '[GREEN — BROWSER VERIFIED]' : `[${uiRes.failedCount} FAILED]`;
+    console.log(`  11. DEVOS-UI (WP1)         : ${uiRes.passedCount}/${uiRes.total} PASSED  ${statusLabel}`);
+  }
+  if (ui3Res) {
+    const statusLabel = ui3Res.failedCount === 0 ? '[GREEN — BROWSER VERIFIED]' : `[${ui3Res.failedCount} FAILED]`;
+    console.log(`  12. DEVOS-UI (WP3 DI)      : ${ui3Res.passedCount}/${ui3Res.total} PASSED  ${statusLabel}`);
+  }
+  if (accRes) {
+    const statusLabel = accRes.failedCount === 0 ? '[GREEN — API + BROWSER VERIFIED]' : `[${accRes.failedCount} FAILED]`;
+    console.log(`  13. DEVOS-ACCESS (WP2)     : ${accRes.passedCount}/${accRes.total} PASSED  ${statusLabel}`);
+  }
   console.log('===============================================================\n');
   const failed =
     (cleanDbRes && cleanDbRes.failedCount > 0) ||
@@ -178,7 +205,10 @@ async function main() {
     (ef3Res && ef3Res.failedCount > 0) ||
     (di1Res && di1Res.baseline.mismatches > 0) ||
     (di1d1Res && di1d1Res.failedCount > 0) ||
-    (di2Res && di2Res.baseline.mismatches > 0);
+    (di2Res && di2Res.baseline.mismatches > 0) ||
+    (uiRes && uiRes.failedCount > 0) ||
+    (ui3Res && ui3Res.failedCount > 0) ||
+    (accRes && accRes.failedCount > 0);
   process.exit(failed ? 1 : 0);
 }
 
