@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const contractsRepo = require('../db/repositories/contracts.repo');
 const { requirePermission, authorizeResource, authorizeProjectParent } = require('../middleware/auth');
+const { authorizeExecutionReferences } = require('../middleware/references');
 
 // GET contracts
 router.get('/', requirePermission('contracts:read'), async (req, res, next) => {
@@ -30,7 +31,7 @@ router.get('/:id', requirePermission('contracts:read'), authorizeResource('contr
 });
 
 // CREATE contract
-router.post('/', requirePermission('contracts:create'), authorizeProjectParent, async (req, res, next) => {
+router.post('/', requirePermission('contracts:create'), authorizeProjectParent, authorizeExecutionReferences(), async (req, res, next) => {
   try {
     const c = await contractsRepo.create(req.body);
     res.status(201).json(c);
@@ -40,7 +41,7 @@ router.post('/', requirePermission('contracts:create'), authorizeProjectParent, 
 });
 
 // UPDATE contract
-router.put('/:id', requirePermission('contracts:update'), authorizeResource('contract'), async (req, res, next) => {
+router.put('/:id', requirePermission('contracts:update'), authorizeResource('contract'), authorizeExecutionReferences(), async (req, res, next) => {
   try {
     const c = await contractsRepo.update(req.params.id, req.body);
     if (!c) return res.status(404).json({ error: 'Not found' });

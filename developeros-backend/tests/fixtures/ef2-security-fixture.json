@@ -209,10 +209,17 @@
       "budget": 95000000,
       "status": "active"
     },
+    "partner": {
+      "id": "part-org2-confidential",
+      "organizationId": "org2",
+      "name": "Bayline Structural Engineers (Tenant B Confidential)",
+      "role": "structural",
+      "initials": "BS"
+    },
     "contract": {
       "id": "c-org2-confidential",
       "projectId": "p-org2-confidential",
-      "partnerId": "part1",
+      "partnerId": "part-org2-confidential",
       "type": "General Contracting",
       "status": "pending",
       "value": 45000000

@@ -1,0 +1,172 @@
+{
+  "title": "DEVOS-DI-1 expected-findings oracle",
+  "contract": "docs/DEVOS-DI1-ACCEPTANCE-CONTRACT.md §7–§9",
+  "derivation": "Every expected finding below is derived by hand from the controlled records in this file and the rule semantics in the contract — not from any implementation output. Tenant dix-beta is deliberately built so that every rule would fire for dix-alpha if any foreign input leaked.",
+  "tenants": [
+    { "id": "dix-alpha", "name": "DI Fixture Alpha Developer" },
+    { "id": "dix-beta", "name": "DI Fixture Beta Developer" }
+  ],
+  "users": [
+    { "id": "dix-u-alpha-admin", "email": "alpha.admin@di1.test", "organizationId": "dix-alpha", "roleId": "org-admin" },
+    { "id": "dix-u-alpha-dev", "email": "alpha.dev@di1.test", "organizationId": "dix-alpha", "roleId": "developer" },
+    { "id": "dix-u-alpha-viewer", "email": "alpha.viewer@di1.test", "organizationId": "dix-alpha", "roleId": "viewer" },
+    { "id": "dix-u-beta-admin", "email": "beta.admin@di1.test", "organizationId": "dix-beta", "roleId": "org-admin" },
+    { "id": "dix-u-beta-dev", "email": "beta.dev@di1.test", "organizationId": "dix-beta", "roleId": "developer" }
+  ],
+  "records": {
+    "partners": [
+      { "id": "dix-a-partner1", "orgId": "dix-alpha", "name": "Alpha Civil Engineering", "role": "Civil", "initials": "AC" },
+      { "id": "dix-b-partner1", "orgId": "dix-beta", "name": "Beta Foreign Partner ZQX", "role": "Survey", "initials": "BF" }
+    ],
+    "projects": [
+      { "id": "dix-a-p1", "organizationId": "dix-alpha", "name": "Alpha Tower", "phase": 3 },
+      { "id": "dix-a-p2", "organizationId": "dix-alpha", "name": "Alpha Commons", "phase": 1 },
+      { "id": "dix-b-p1", "organizationId": "dix-beta", "name": "Beta Plaza", "phase": 4 }
+    ],
+    "contracts": [
+      { "id": "dix-a-c1", "projectId": "dix-a-p1", "partnerId": null, "type": "General Contractor", "status": "pending", "linkedTaskCount": 4 },
+      { "id": "dix-a-c2", "projectId": "dix-a-p1", "partnerId": "dix-a-partner1", "type": "Survey", "status": "missing", "linkedTaskCount": 2 },
+      { "id": "dix-a-c3", "projectId": "dix-a-p2", "partnerId": null, "type": "Geotechnical", "status": "missing", "linkedTaskCount": 0 },
+      { "id": "dix-a-c4", "projectId": "dix-a-p1", "partnerId": "dix-a-partner1", "type": "Architecture", "status": "executed", "linkedTaskCount": 3 },
+      { "id": "dix-b-c1", "projectId": "dix-b-p1", "partnerId": "dix-b-partner1", "type": "Geotechnical", "status": "missing", "linkedTaskCount": 3 }
+    ],
+    "tasks": [
+      { "id": "dix-a-t1", "projectId": "dix-a-p1", "title": "Alpha site survey", "partnerId": "dix-a-partner1", "contractId": null, "status": "not-started" },
+      { "id": "dix-a-t2", "projectId": "dix-a-p1", "title": "Alpha closed item", "partnerId": null, "contractId": null, "status": "complete" },
+      { "id": "dix-a-t3", "projectId": "dix-a-p1", "title": "Alpha design development", "partnerId": "dix-a-partner1", "contractId": "dix-a-c4", "status": "blocked" },
+      { "id": "dix-a-t4", "projectId": "dix-a-p2", "title": "Alpha soils report", "partnerId": null, "contractId": "dix-a-c3", "status": "blocked" },
+      { "id": "dix-a-t5", "projectId": "dix-a-p1", "title": "Alpha schematic design", "partnerId": "dix-a-partner1", "contractId": "dix-a-c4", "status": "in-progress" },
+      { "id": "dix-b-t1", "projectId": "dix-b-p1", "title": "Beta blocked work", "partnerId": "dix-b-partner1", "contractId": "dix-b-c1", "status": "blocked" },
+      { "id": "dix-b-t2", "projectId": "dix-b-p1", "title": "Beta uncontracted work", "partnerId": "dix-b-partner1", "contractId": null, "status": "not-started" }
+    ],
+    "permits": [
+      { "id": "dix-a-pm1", "projectId": "dix-a-p1", "name": "Alpha Building Permit", "status": "corrections" },
+      { "id": "dix-a-pm2", "projectId": "dix-a-p2", "name": "Alpha Grading Permit", "status": "approved" },
+      { "id": "dix-b-pm1", "projectId": "dix-b-p1", "name": "Beta Building Permit", "status": "corrections" }
+    ],
+    "permitCorrections": [
+      { "id": "dix-a-cor1", "permitId": "dix-a-pm1", "text": "Fire lane width", "status": "not-started" },
+      { "id": "dix-a-cor2", "permitId": "dix-a-pm1", "text": "Title sheet", "status": "complete" },
+      { "id": "dix-a-cor3", "permitId": "dix-a-pm2", "text": "Erosion plan", "status": "not-started" },
+      { "id": "dix-b-cor1", "permitId": "dix-b-pm1", "text": "Beta correction", "status": "not-started" }
+    ],
+    "capitalStacks": [
+      { "id": "dix-a-cs1", "projectId": "dix-a-p1", "totalCost": 50000000 },
+      { "id": "dix-b-cs1", "projectId": "dix-b-p1", "totalCost": 30000000 }
+    ],
+    "capitalSources": [
+      { "id": "dix-a-src1", "stackId": "dix-a-cs1", "name": "Alpha LIHTC Equity", "type": "equity", "amount": 12000000, "status": "pending", "deadline": "2025-03-15" },
+      { "id": "dix-a-src2", "stackId": "dix-a-cs1", "name": "Alpha Construction Loan", "type": "debt", "amount": 30000000, "status": "committed", "deadline": "2025-02-10" },
+      { "id": "dix-a-src3", "stackId": "dix-a-cs1", "name": "Alpha Soft Loan", "type": "debt", "amount": 3000000, "status": "pending", "deadline": null },
+      { "id": "dix-a-src4", "stackId": "dix-a-cs1", "name": "Alpha Gap Grant", "type": "grant", "amount": 2000000, "status": "pending", "deadline": "2025-01-15" },
+      { "id": "dix-b-src1", "stackId": "dix-b-cs1", "name": "Beta Bridge Loan", "type": "debt", "amount": 9000000, "status": "pending", "deadline": "2025-02-15" }
+    ],
+    "diRelationships": [
+      { "id": "dix-a-rel1", "organizationId": "dix-alpha", "name": "Eastside Housing Authority", "relationshipType": "housing authority" },
+      { "id": "dix-b-rel1", "organizationId": "dix-beta", "name": "Beta Land Trust", "relationshipType": "landowner" }
+    ],
+    "diProperties": [
+      { "id": "dix-a-prop1", "organizationId": "dix-alpha", "name": "Alpha Corner Lot", "city": "Los Angeles" },
+      { "id": "dix-a-prop2", "organizationId": "dix-alpha", "name": "Alpha Mid-Block Parcel", "city": "Los Angeles" },
+      { "id": "dix-b-prop1", "organizationId": "dix-beta", "name": "Beta Parcel", "city": "Oakland" }
+    ],
+    "diSiteFacts": [
+      { "propertyId": "dix-a-prop1", "key": "zoning", "value": "R4", "status": "KNOWN" },
+      { "propertyId": "dix-a-prop1", "key": "ownership", "value": null, "status": "UNKNOWN" },
+      { "propertyId": "dix-a-prop2", "key": "apn", "value": "5555-001-002", "status": "KNOWN" },
+      { "propertyId": "dix-a-prop2", "key": "ownership", "value": "Private owner", "status": "KNOWN" },
+      { "propertyId": "dix-a-prop2", "key": "lot_area_sqft", "value": 21780, "status": "KNOWN" },
+      { "propertyId": "dix-a-prop2", "key": "zoning", "value": "C2", "status": "KNOWN" },
+      { "propertyId": "dix-a-prop2", "key": "current_use", "value": "Surface parking", "status": "KNOWN" },
+      { "propertyId": "dix-a-prop2", "key": "acquisition_basis", "value": null, "status": "NOT_APPLICABLE" }
+    ],
+    "diOpportunities": [
+      { "id": "dix-a-opp1", "organizationId": "dix-alpha", "propertyId": "dix-a-prop1", "relationshipId": "dix-a-rel1", "name": "Alpha Corner Infill", "status": "SCREENING", "concept": "Mixed-income infill" },
+      { "id": "dix-a-opp2", "organizationId": "dix-alpha", "propertyId": "dix-a-prop1", "relationshipId": null, "name": "Alpha Declined Pursuit", "status": "DECLINED", "concept": "Retail pad" },
+      { "id": "dix-a-opp3", "organizationId": "dix-alpha", "propertyId": "dix-a-prop2", "relationshipId": "dix-a-rel1", "name": "Alpha Mid-Block Housing", "status": "READY_FOR_QUALIFICATION", "concept": "Family housing" },
+      { "id": "dix-b-opp1", "organizationId": "dix-beta", "propertyId": "dix-b-prop1", "relationshipId": "dix-b-rel1", "name": "Beta Pursuit", "status": "SCREENING", "concept": "Senior housing" }
+    ]
+  },
+  "evaluations": [
+    {
+      "id": "ALPHA-2025-02-01",
+      "organizationId": "dix-alpha",
+      "asOf": "2025-02-01T00:00:00.000Z",
+      "expected": [
+        { "ruleId": "EXEC-TASK-NO-CONTRACT", "findingType": "missing-contract", "severity": "critical", "sources": [["task", "dix-a-t1"]] },
+        { "ruleId": "EXEC-CONTRACT-MISSING", "findingType": "missing-contract", "severity": "critical", "sources": [["contract", "dix-a-c2"]] },
+        { "ruleId": "EXEC-BLOCKED-TASKS", "findingType": "blocked-tasks", "severity": "warning", "sources": [["project", "dix-a-p1"], ["task", "dix-a-t3"]] },
+        { "ruleId": "EXEC-BLOCKED-TASKS", "findingType": "blocked-tasks", "severity": "warning", "sources": [["project", "dix-a-p2"], ["task", "dix-a-t4"]] },
+        { "ruleId": "EXEC-PERMIT-CORRECTIONS", "findingType": "permit-corrections", "severity": "warning", "sources": [["permit", "dix-a-pm1"], ["permit_correction", "dix-a-cor1"]] },
+        { "ruleId": "EXEC-CAPITAL-DEADLINE", "findingType": "capital-deadline", "severity": "warning", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src1"]], "derivation": "2025-03-15 − 2025-02-01 = 42 days (< 60, ≥ 30)" },
+        { "ruleId": "EXEC-CAPITAL-DEADLINE", "findingType": "capital-deadline", "severity": "critical", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src4"]], "derivation": "2025-01-15 − 2025-02-01 = −17 days (overdue)" },
+        { "ruleId": "EXEC-GC-CONTRACT-PENDING", "findingType": "gc-contract", "severity": "warning", "sources": [["project", "dix-a-p1"], ["contract", "dix-a-c1"]] },
+        { "ruleId": "DI-OPPORTUNITY-INFORMATION-REQUIRED", "findingType": "information-required", "severity": "info", "sources": [["opportunity", "dix-a-opp1"]] }
+      ],
+      "forbidden": [
+        { "why": "R1: task complete", "ruleId": "EXEC-TASK-NO-CONTRACT", "sources": [["task", "dix-a-t2"]] },
+        { "why": "R2: missing contract with no linked tasks", "ruleId": "EXEC-CONTRACT-MISSING", "sources": [["contract", "dix-a-c3"]] },
+        { "why": "R4: permit not in corrections status", "ruleId": "EXEC-PERMIT-CORRECTIONS", "sources": [["permit", "dix-a-pm2"], ["permit_correction", "dix-a-cor3"]] },
+        { "why": "R5: committed source", "ruleId": "EXEC-CAPITAL-DEADLINE", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src2"]] },
+        { "why": "R5: no deadline", "ruleId": "EXEC-CAPITAL-DEADLINE", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src3"]] },
+        { "why": "DI: terminal opportunity", "ruleId": "DI-OPPORTUNITY-INFORMATION-REQUIRED", "sources": [["opportunity", "dix-a-opp2"]] },
+        { "why": "DI: ready opportunity", "ruleId": "DI-OPPORTUNITY-INFORMATION-REQUIRED", "sources": [["opportunity", "dix-a-opp3"]] }
+      ],
+      "forbiddenSourcePrefix": "dix-b-"
+    },
+    {
+      "id": "ALPHA-2025-02-20",
+      "organizationId": "dix-alpha",
+      "asOf": "2025-02-20T00:00:00.000Z",
+      "expectedDelta": "Same as ALPHA-2025-02-01 except dix-a-src1 is critical (2025-03-15 − 2025-02-20 = 23 days) and dix-a-src4 remains critical (−36 days)",
+      "expected": [
+        { "ruleId": "EXEC-TASK-NO-CONTRACT", "findingType": "missing-contract", "severity": "critical", "sources": [["task", "dix-a-t1"]] },
+        { "ruleId": "EXEC-CONTRACT-MISSING", "findingType": "missing-contract", "severity": "critical", "sources": [["contract", "dix-a-c2"]] },
+        { "ruleId": "EXEC-BLOCKED-TASKS", "findingType": "blocked-tasks", "severity": "warning", "sources": [["project", "dix-a-p1"], ["task", "dix-a-t3"]] },
+        { "ruleId": "EXEC-BLOCKED-TASKS", "findingType": "blocked-tasks", "severity": "warning", "sources": [["project", "dix-a-p2"], ["task", "dix-a-t4"]] },
+        { "ruleId": "EXEC-PERMIT-CORRECTIONS", "findingType": "permit-corrections", "severity": "warning", "sources": [["permit", "dix-a-pm1"], ["permit_correction", "dix-a-cor1"]] },
+        { "ruleId": "EXEC-CAPITAL-DEADLINE", "findingType": "capital-deadline", "severity": "critical", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src1"]] },
+        { "ruleId": "EXEC-CAPITAL-DEADLINE", "findingType": "capital-deadline", "severity": "critical", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src4"]] },
+        { "ruleId": "EXEC-GC-CONTRACT-PENDING", "findingType": "gc-contract", "severity": "warning", "sources": [["project", "dix-a-p1"], ["contract", "dix-a-c1"]] },
+        { "ruleId": "DI-OPPORTUNITY-INFORMATION-REQUIRED", "findingType": "information-required", "severity": "info", "sources": [["opportunity", "dix-a-opp1"]] }
+      ],
+      "forbidden": [],
+      "forbiddenSourcePrefix": "dix-b-"
+    },
+    {
+      "id": "ALPHA-2025-01-01",
+      "organizationId": "dix-alpha",
+      "asOf": "2025-01-01T00:00:00.000Z",
+      "expectedDelta": "dix-a-src1 absent (73 days); dix-a-src4 critical (14 days). Proves time comes from asOf: against the real clock both sources are overdue.",
+      "expected": [
+        { "ruleId": "EXEC-TASK-NO-CONTRACT", "findingType": "missing-contract", "severity": "critical", "sources": [["task", "dix-a-t1"]] },
+        { "ruleId": "EXEC-CONTRACT-MISSING", "findingType": "missing-contract", "severity": "critical", "sources": [["contract", "dix-a-c2"]] },
+        { "ruleId": "EXEC-BLOCKED-TASKS", "findingType": "blocked-tasks", "severity": "warning", "sources": [["project", "dix-a-p1"], ["task", "dix-a-t3"]] },
+        { "ruleId": "EXEC-BLOCKED-TASKS", "findingType": "blocked-tasks", "severity": "warning", "sources": [["project", "dix-a-p2"], ["task", "dix-a-t4"]] },
+        { "ruleId": "EXEC-PERMIT-CORRECTIONS", "findingType": "permit-corrections", "severity": "warning", "sources": [["permit", "dix-a-pm1"], ["permit_correction", "dix-a-cor1"]] },
+        { "ruleId": "EXEC-CAPITAL-DEADLINE", "findingType": "capital-deadline", "severity": "critical", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src4"]] },
+        { "ruleId": "EXEC-GC-CONTRACT-PENDING", "findingType": "gc-contract", "severity": "warning", "sources": [["project", "dix-a-p1"], ["contract", "dix-a-c1"]] },
+        { "ruleId": "DI-OPPORTUNITY-INFORMATION-REQUIRED", "findingType": "information-required", "severity": "info", "sources": [["opportunity", "dix-a-opp1"]] }
+      ],
+      "forbidden": [
+        { "why": "R5: 73 days remaining at this asOf", "ruleId": "EXEC-CAPITAL-DEADLINE", "sources": [["capital_stack", "dix-a-cs1"], ["capital_source", "dix-a-src1"]] }
+      ],
+      "forbiddenSourcePrefix": "dix-b-"
+    },
+    {
+      "id": "BETA-2025-02-01",
+      "organizationId": "dix-beta",
+      "asOf": "2025-02-01T00:00:00.000Z",
+      "expected": [
+        { "ruleId": "EXEC-TASK-NO-CONTRACT", "findingType": "missing-contract", "severity": "critical", "sources": [["task", "dix-b-t2"]] },
+        { "ruleId": "EXEC-CONTRACT-MISSING", "findingType": "missing-contract", "severity": "critical", "sources": [["contract", "dix-b-c1"]] },
+        { "ruleId": "EXEC-BLOCKED-TASKS", "findingType": "blocked-tasks", "severity": "warning", "sources": [["project", "dix-b-p1"], ["task", "dix-b-t1"]] },
+        { "ruleId": "EXEC-PERMIT-CORRECTIONS", "findingType": "permit-corrections", "severity": "warning", "sources": [["permit", "dix-b-pm1"], ["permit_correction", "dix-b-cor1"]] },
+        { "ruleId": "EXEC-CAPITAL-DEADLINE", "findingType": "capital-deadline", "severity": "critical", "sources": [["capital_stack", "dix-b-cs1"], ["capital_source", "dix-b-src1"]], "derivation": "2025-02-15 − 2025-02-01 = 14 days" },
+        { "ruleId": "DI-OPPORTUNITY-INFORMATION-REQUIRED", "findingType": "information-required", "severity": "info", "sources": [["opportunity", "dix-b-opp1"]] }
+      ],
+      "forbidden": [],
+      "forbiddenSourcePrefix": "dix-a-"
+    }
+  ]
+}

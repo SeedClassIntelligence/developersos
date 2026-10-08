@@ -1,0 +1,243 @@
+# DEVOS-DI-1 RED gate — full gate run from a recreated empty test database (npm run test:gate)
+# Branch base: 1b4115f (main ca69d64 + EF-3 freeze docs). DI-1 implementation: none.
+RUNNING SUITE: DEVOS-CLEAN-DB GATE (empty database bootstrap)
+[TEST-ENV] Recreated empty test database "developeros_test"
+  [PASS] DEVOS-CLEANDB-001 - Test database was dropped and recreated empty by this gate run
+  [PASS] DEVOS-CLEANDB-002 - Migrations and canonical seed complete on the empty database without manual steps
+  [PASS] DEVOS-CLEANDB-003 - All 5 migrations are recorded as applied
+  [PASS] DEVOS-CLEANDB-004 - Runtime connections use the provisioned non-superuser runtime role, distinct from the migration role
+  [PASS] DEVOS-CLEANDB-005 - Canonical fixture is fully present after bootstrap
+DEVOS-CLEAN-DB GATE SUMMARY: 5 PASSED, 0 FAILED (Total: 5)
+RUNNING SUITE: DEVOS-V1-REGRESSION (Baseline Protection)
+  [PASS] REG-AUTH-001 - Valid login returns JWT and user profile
+  [PASS] REG-AUTH-002 - Invalid password returns 401 Unauthorized
+  [PASS] REG-AUTH-003 - Non-existent user returns 401 Unauthorized
+  [PASS] REG-AUTH-004 - Protected route without Authorization header returns 401
+  [PASS] REG-AUTH-005 - Protected route with valid Bearer token returns 200
+  [PASS] REG-AUTH-006 - Expired token returns 401 Token expired
+  [PASS] REG-AUTH-007 - Malformed token returns 401 Invalid token
+  [PASS] REG-AUTH-008 - GET /api/auth/me returns safe user profile
+  [PASS] REG-AUTH-009 - Password change with wrong current password returns 401
+  [PASS] REG-AUTH-010 - Password change with short new password returns 400
+  [PASS] REG-PROJ-001 - List projects returns array of canonical projects
+  [PASS] REG-PROJ-002 - Project p1 matches canonical schema
+  [PASS] REG-PROJ-003 - GET /api/projects/:id returns single project
+  [PASS] REG-PROJ-004 - GET non-existent project returns 404
+  [PASS] REG-PROJ-005 - POST /api/projects creates new project with generated ID
+  [PASS] REG-PROJ-006 - PUT /api/projects/:id updates existing project
+  [PASS] REG-PROJ-007 - Developer cannot delete a project without projects:delete
+  [PASS] REG-PROJ-008 - Rejected project deletion leaves project unchanged
+  [PASS] REG-TASK-001 - GET /api/tasks returns all canonical tasks
+  [PASS] REG-TASK-002 - GET /api/tasks?projectId=p1 filters tasks by project
+  [PASS] REG-TASK-003 - GET /api/tasks?status=blocked returns blocked tasks
+  [PASS] REG-TASK-004 - GET /api/tasks?discipline=arch returns architecture tasks
+  [PASS] REG-TASK-005 - POST /api/tasks creates task with id prefixed by t
+  [PASS] REG-TASK-006 - PATCH /api/tasks/:id/status updates task status
+  [PASS] REG-TASK-007 - PATCH /api/tasks/:id/status rejects invalid status enum
+  [PASS] REG-TASK-008 - Task dependency array survives general PUT update
+  [PASS] REG-CONT-001 - GET /api/contracts returns all canonical contracts
+  [PASS] REG-CONT-002 - GET /api/contracts?projectId=p1 filters contracts
+  [PASS] REG-CONT-003 - GET /api/contracts/c1 returns architectural services contract
+  [PASS] REG-CONT-004 - POST /api/contracts/:id/execute sets executed status and date
+  [PASS] REG-CONT-005 - CRITICAL SOW: Executing contract unblocks linked blocked tasks
+  [PASS] REG-PERM-001 - GET /api/permits returns canonical permits
+  [PASS] REG-PERM-002 - GET /api/permits/pm3 contains nested corrections
+  [PASS] REG-PERM-003 - PATCH /api/permits/:id/corrections/:corrId updates correction item status
+  [PASS] REG-PERM-004 - PATCH /api/permits/:id/status updates permit review status
+  [PASS] REG-CAP-001 - GET /api/capital/p1 returns capital stack with sources
+  [PASS] REG-CAP-002 - Capital sources sum matches totalCost exactly
+  [PASS] REG-CAP-003 - PUT /api/capital/p1 updates capital stack total cost
+  [PASS] REG-MSG-001 - GET /api/messages/channels returns project channels
+  [PASS] REG-MSG-002 - GET /api/messages/channels/:id/messages returns messages
+  [PASS] REG-MSG-003 - POST message strips dangerous script tags
+  [PASS] REG-DOC-001 - GET /api/documents returns project documents
+  [PASS] REG-DOC-002 - GET /api/documents category filter works
+  [PASS] REG-DOC-003 - POST /api/documents creates document metadata
+  [PASS] REG-DOC-004 - DELETE /api/documents/:id removes document metadata
+  [PASS] REG-ALRT-001 - GET /api/alerts returns generated risk alerts
+  [PASS] REG-ALRT-002 - Deterministic rules identify missing contracts
+  [PASS] REG-ALRT-003 - Alerts engine produces both critical and warning alerts
+  [PASS] REG-TEAM-001 - GET /api/team returns team members
+  [PASS] REG-TEAM-002 - Developer cannot manage team membership without team:manage
+  [PASS] REG-ADM-001 - Organization administrator cannot access platform summary metrics
+  [PASS] REG-ADM-002 - GET /api/admin/stats returns 403 Forbidden for non-admin
+  [PASS] REG-ADM-003 - Organization administrator cannot access platform runtime health
+  [PASS] REG-SPA-001 - GET / serves HTML SPA shell
+  [PASS] REG-SPA-002 - GET /health returns public status ok
+DEVOS-V1-REGRESSION SUMMARY: 55 PASSED, 0 FAILED (Total: 55)
+  [PASS] STEP-0A-INVITE: Organization administrator issues a scoped invitation
+  [PASS] STEP-0B-ACCEPT: Invited user accepts the authorized membership
+  [PASS] STEP-0C-CONTEXT: New identity resolves its active organization membership
+  [PASS] STEP-0D-AUTHORIZED-READ: New read-only member can perform its legitimate tenant-scoped work
+  [PASS] STEP-1-AUTH: Authenticate developer lead Maria Rodriguez
+  [PASS] STEP-2-PROJ: Load active project p1 (Westside Housing Phase II)
+  [PASS] STEP-3-TASKS: Load 12 initial SOW tasks for project p1
+  [PASS] STEP-4-INSPECT-DEPS: Inspect blocked task t7 and missing contract dependency on t1
+  [PASS] STEP-5-EXECUTE-CONTRACT: Execute Landscape Architecture contract c7
+  [PASS] STEP-6-VERIFY-UNBLOCK: Task t1 transitions from blocked to not-started upon contract execution
+  [PASS] STEP-7-PERMITS: Resolve permit correction item cor1 and advance permit status to under-review
+  [PASS] STEP-8-CAPITAL: Verify $24.2M capital stack sources reconcile with project cost
+  [PASS] STEP-9-MESSAGE: Broadcast SOW coordination message to project channel
+  [PASS] STEP-10-DOCUMENTS: Retrieve project document repository containing 5 core records
+  [PASS] STEP-11-ALERTS: Generate deterministic risk alerts reflecting real-time project state
+DEVOS-GOLDEN-001 SUMMARY: 15 PASSED, 0 FAILED (Total: 15)
+RUNNING SUITE: DEVOS-SEC-KNOWN-DEBT (Pre-Existing Defect Markers)
+  [PASS] DEVOS-SEC-TENANT-001A - Tenant A cannot read Tenant B project by direct ID
+  [PASS] DEVOS-SEC-TENANT-001B - Tenant A project list excludes Tenant B projects
+  [PASS] DEVOS-SEC-REGISTER-001 - Public registration rejects self-assigned administrator privilege
+DEVOS-SEC-KNOWN-DEBT SUMMARY: 3 PASSED, 0 RED/CONFIRMED VULNERABILITIES
+RUNNING SUITE: DEVOS-EF-1 ACCEPTANCE TESTS (Gated Red-Verification)
+  [PASS] DEVOS-EF1-STRUCT-001 - Relational database tables exist in PostgreSQL
+  [PASS] DEVOS-EF1-STRUCT-002 - Foreign key constraints exist on tasks and contracts
+  [PASS] DEVOS-EF1-STRUCT-003 - Monetary columns use numeric(15,2) exact precision
+  [PASS] DEVOS-EF1-PERSIST-001 - Created resource persists across runtime process reload
+  [PASS] DEVOS-EF1-REL-001 - Relational JOIN queries succeed across projects and tasks
+  [PASS] DEVOS-EF1-TXN-001 - Contract execution and task unblocking execute in atomic transaction
+  [PASS] DEVOS-EF1-PERMIT-001 - Permit corrections persist in relational permit_corrections table
+  [PASS] DEVOS-EF1-CAPITAL-001 - Capital sources persist in normalized capital_sources table
+  [PASS] DEVOS-EF1-MIGRATE-001 - Canonical v1 dataset migrated into PostgreSQL (count = 6)
+  [PASS] DEVOS-EF1-MIGRATE-002 - Zero orphaned foreign key references after migration
+  [PASS] DEVOS-EF1-RESTART-001 - Server runtime is configured with durable persistent database
+  [PASS] DEVOS-EF1-REGRESSION-001 - DEVOS-V1-REGRESSION passes against PostgreSQL implementation
+  [PASS] DEVOS-EF1-GOLDEN-001 - DEVOS-GOLDEN-001 passes against PostgreSQL implementation
+DEVOS-EF-1 ACCEPTANCE SUMMARY: 13 PASSED, 0 RED (Total: 13)
+RUNNING SUITE: DEVOS-EF-2 ACCEPTANCE TESTS (Gated Red-Verification)
+  [PASS] DEVOS-EF2-MEMBERSHIP-001 - Active membership establishes authorized organization context
+  [PASS] DEVOS-EF2-MEMBERSHIP-002 - User without membership cannot establish organization context
+  [PASS] DEVOS-EF2-MEMBERSHIP-003 - Inactive/revoked membership denies access
+  [PASS] DEVOS-EF2-MEMBERSHIP-004 - User operates only within active organization context
+  [PASS] DEVOS-EF2-MEMBERSHIP-005 - Context switch resets effective permissions without carryover
+  [PASS] DEVOS-EF2-MEMBERSHIP-006 - Client cannot fabricate membership via organization_id header
+  [PASS] DEVOS-EF2-INVITE-001 - Authorized organization administrator can issue invitation
+  [PASS] DEVOS-EF2-INVITE-002 - Unauthorized user cannot issue invitation
+  [PASS] DEVOS-EF2-INVITE-003 - Expired invitation cannot be accepted
+  [PASS] DEVOS-EF2-INVITE-004 - Revoked invitation cannot be accepted
+  [PASS] DEVOS-EF2-INVITE-005 - Invitation acceptance prevents self-assigned role elevation
+  [PASS] DEVOS-EF2-REGISTER-001 - Public registration cannot select arbitrary organization
+  [PASS] DEVOS-EF2-REGISTER-002 - Public registration rejects permission injection
+  [PASS] DEVOS-EF2-RBAC-001 - Developer role cannot delete organization projects
+  [PASS] DEVOS-EF2-RBAC-002 - Read-only viewer role cannot mutate resources
+  [PASS] DEVOS-EF2-RBAC-003 - Role from Tenant A provides zero authority in Tenant B
+  [PASS] DEVOS-EF2-DIRECT-001 - Direct ID access across all child domains is strictly denied
+  [PASS] DEVOS-EF2-MUTATE-001 - Cross-tenant mutation fails and Tenant B record remains unchanged
+  [PASS] DEVOS-EF2-DEL-TASK-001 - Task deletion enforces RBAC, tenant isolation, and resource policy
+  [PASS] DEVOS-EF2-DEL-CONT-001 - Contract deletion enforces RBAC, tenant isolation, and resource policy
+  [PASS] DEVOS-EF2-PARENT-001 - Client cannot inject child resource under foreign-tenant parent
+  [PASS] DEVOS-EF2-MASSASSIGN-001 - Updating project cannot rebind organization_id to foreign tenant
+  [PASS] DEVOS-EF2-ADMIN-001 - Organization Administrator cannot access platform-global admin stats
+  [PASS] DEVOS-EF2-JWT-001 - Server-side revocation immediately invalidates unexpired JWT authority
+  [PASS] DEVOS-EF2-SCHEMA-001 - Relational tables for memberships, invitations, and RBAC exist
+  [PASS] DEVOS-EF2-RESP-001 - Authorization failures do not leak confidential metadata
+DEVOS-EF-2 ACCEPTANCE SUMMARY: 29 PASSED, 0 RED (Total: 29)
+  [PASS] SEC-01-LIST: Tenant A list excludes Tenant B resources
+  [PASS] SEC-02-DIRECT: Guessed foreign project ID is concealed
+  [PASS] SEC-03-MUTATE: Foreign mutation is denied and durable state is unchanged
+  [PASS] SEC-04-PARENT: Foreign parent-ID injection is denied
+  [PASS] SEC-05-CONTEXT-SPOOF: Organization-context spoofing without membership is denied
+  [PASS] SEC-06-CONTEXT-SWITCH: Valid context switch applies only the selected membership
+  [PASS] SEC-07-REVOKE-AFTER-AUTH: Existing JWT loses authority after membership revocation
+  [PASS] SEC-08-DOWNGRADE-AFTER-AUTH: Existing JWT immediately receives downgraded permissions
+  [PASS] SEC-09-DISABLE-AFTER-AUTH: Existing JWT cannot act after identity disablement
+  [PASS] SEC-10-REGISTRATION: Registration payload cannot create authority
+  [PASS] SEC-11-MASS-ASSIGN: Authority and ownership fields cannot be mass-assigned
+  [PASS] SEC-12-ADMIN-SCOPE: Tenant administrator has no platform-admin authority
+  [PASS] SEC-13-VIEWER: Read-only member cannot mutate its own tenant
+  [PASS] SEC-14-INVITATION: Invitation resists tampering, authority substitution, wrong-org use, and replay
+  [PASS] SEC-15-DERIVED-OWNERSHIP: Derived ownership blocks channel, capital, document, task, and contract bypasses
+DEVOS-GOLDEN-SEC-001 SUMMARY: 15 PASSED, 0 FAILED (Total: 15)
+DEVOS-EF-3 ORIGINAL ACCEPTANCE: 11/11 PASSED
+DEVOS-EF-3 ACCEPTANCE SUMMARY: 38/38 PASSED
+RUNNING SUITE: DEVOS-DI-1 ACCEPTANCE (RED GATE)
+  [DI1] fixture: legacy=true di=false (42P01 relation "di_relationships" does not exist)
+  --- A. Structural ---
+  [RED]   DEVOS-DI1-SCHEMA-001 — All seven DI-1 tables exist (migration-driven) :: {"missing":["di_relationships","di_properties","di_opportunities","di_opportunity_status_history","di_site_facts","intelligence_findings","intelligence_finding_events"],"migrationsAfter005":[]}
+  [RED]   DEVOS-DI1-SCHEMA-002 — Every DI table has organization_id NOT NULL with a foreign key to organizations :: [{"table":"di_relationships","column":"absent","fk":false},{"table":"di_properties","column":"absent","fk":false},{"table":"di_opportunities","column":"absent","fk":false},{"table":"di_opportunity_status_history","column":"absent","fk":false},{"table":"di_site_facts","column":"absent","fk":false},{"
+  [RED]   DEVOS-DI1-SCHEMA-003 — Database rejects an opportunity referencing another organization's property (control: same-tenant property accepted) :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-004 — Database rejects an opportunity referencing another organization's relationship :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-005 — Database rejects a site fact attached to another organization's property :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-006 — Database rejects status history pointing at another organization's opportunity :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-007 — Database restricts opportunity status to the DI-1 lifecycle (GO/NO-GO rejected; NEW accepted) :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-008 — Database allows at most one active finding per (organization, rule, condition); a RESOLVED predecessor does not block :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-009 — Database rejects a finding event pointing at another organization's finding :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-010 — Every DI table has an index led by organization_id and carries the EF-3 capture trigger :: [{"table":"di_relationships","absent":true},{"table":"di_properties","absent":true},{"table":"di_opportunities","absent":true},{"table":"di_opportunity_status_history","absent":true},{"table":"di_site_facts","absent":true},{"table":"intelligence_findings","absent":true},{"table":"intelligence_findin
+  [RED]   DEVOS-DI1-SCHEMA-011 — History is durable: the runtime role cannot DELETE status history, site facts, findings or finding events :: DI tables absent
+  [RED]   DEVOS-DI1-SCHEMA-012 — All sixteen DI permissions exist in the EF-2 permission catalog :: {"missing":["relationships:read","relationships:create","relationships:update","properties:read","properties:create","properties:update","opportunities:read","opportunities:create","opportunities:update","opportunities:transition","site_intelligence:read","site_intelligence:update","findings:read","
+  [RED]   DEVOS-DI1-REGISTRY-001 — Machine-readable rule registry exists with a complete, well-typed entry per rule :: missing intelligence/rule-registry.json
+  [RED]   DEVOS-DI1-REGISTRY-002 — Registry inventories all six legacy rules plus the DI information rule, and GET /api/di/rules serves the same registry :: registry file missing
+  --- B. Behavioral ---
+  [RED]   DEVOS-DI1-REL-001 — Create relationship: free-text type, provenance recorded with server-assigned recorder and time :: {"status":404,"body":{"error":"Not found"}}
+  [RED]   DEVOS-DI1-REL-002 — Update relationship; list and direct read return the persisted change :: precondition: relationship create failed
+  [RED]   DEVOS-DI1-PROP-001 — Create property with address and provenance; it does not create a Project :: {"status":404,"projectsBefore":10,"projectsAfter":10}
+  [RED]   DEVOS-DI1-PROP-002 — Update property; direct read returns the change :: precondition: property create failed
+  [RED]   DEVOS-DI1-OPP-001 — Create opportunity: always starts NEW, links property/relationship/responsible member, server-owned fields cannot be supplied :: precondition: property/relationship missing
+  [RED]   DEVOS-DI1-OPP-002 — Valid lifecycle path NEW → SCREENING → INFORMATION_REQUIRED → SCREENING is recorded in history with actor and reason :: precondition: opportunity create failed
+  [RED]   DEVOS-DI1-OPP-003 — Disallowed transitions return 409 and leave status unchanged (NEW → READY_FOR_QUALIFICATION; READY with missing information) :: precondition: create → 404
+  [RED]   DEVOS-DI1-OPP-004 — Decision vocabulary (GO, NO-GO, HOLD, WATCH, CONDITIONAL GO) is rejected with 400 as a lifecycle target :: precondition: opportunity create failed
+  [RED]   DEVOS-DI1-OPP-005 — Terminal states DECLINED, WITHDRAWN and EXPIRED are reachable and immutable :: {"DECLINED":"create 404","WITHDRAWN":"create 404","EXPIRED":"create 404"}
+  [RED]   DEVOS-DI1-SITE-001 — Site intelligence persists KNOWN, UNKNOWN and NOT_APPLICABLE distinctly; absent facts stay absent :: precondition: property create failed
+  [RED]   DEVOS-DI1-SITE-002 — Changing a fact creates a new version; the prior version is preserved in history :: precondition: property create failed
+  [RED]   DEVOS-DI1-SITE-003 — Invalid facts are rejected: unknown key, KNOWN without value, UNKNOWN with a manufactured value :: precondition: property create failed
+  [RED]   DEVOS-DI1-PROV-001 — Provenance is required and typed; SYSTEM_DERIVED cannot be claimed by a user; recorder cannot be spoofed :: {"missing":404,"badType":404,"system":404,"spoof":[404,null]}
+  [RED]   DEVOS-DI1-READY-001 — Readiness reports INFORMATION_REQUIRED with the exact missing requirement keys :: precondition: opportunity create failed
+  [RED]   DEVOS-DI1-READY-002 — UNKNOWN does not satisfy a requirement; NOT_APPLICABLE does; completing information yields READY_FOR_QUALIFICATION and permits the transition :: precondition missing
+  [RED]   DEVOS-DI1-INFORMATION-001 — Incomplete information produces INFORMATION_REQUIRED — never NO-GO, a decision field, or a terminal state :: precondition: create → 404
+  [RED]   DEVOS-DI1-OPPORTUNITY-NOT-PROJECT-001 — Creating, enriching, transitioning and evaluating an Opportunity never creates or changes a Project :: {"steps":[404,404],"before":{"n":10,"h":"e7561df4c84ea780c7b50d231f440e0d"},"after":{"n":10,"h":"e7561df4c84ea780c7b50d231f440e0d"}}
+  --- B. Findings (oracle) ---
+  [RED]   DEVOS-DI1-EVAL-001 — asOf is required and validated (missing or malformed → 400); a valid asOf succeeds :: {"none":404,"junk":404,"ok":404}
+  [RED]   DEVOS-DI1-EVAL-002 — Alpha @ 2025-02-01: every expected finding appears with the correct rule, severity, type and exact source records :: {"status":404,"ok":false,"missing":["EXEC-TASK-NO-CONTRACT|task:dix-a-t1","EXEC-CONTRACT-MISSING|contract:dix-a-c2","EXEC-BLOCKED-TASKS|project:dix-a-p1,task:dix-a-t3","EXEC-BLOCKED-TASKS|project:dix-a-p2,task:dix-a-t4","EXEC-PERMIT-CORRECTIONS|permit:dix-a-pm1,permit_correction:dix-a-cor1","EXEC-CA
+  [RED]   DEVOS-DI1-EVAL-003 — Alpha @ 2025-02-01: no unexpected or explicitly forbidden finding appears (negative oracle) :: {"status":404,"unexpected":[],"forbiddenHit":[]}
+  [RED]   DEVOS-DI1-EVAL-004 — Time comes only from asOf: alpha @ 2025-02-20 and @ 2025-01-01 match their oracles (the real clock would make both capital sources overdue) :: {"ALPHA-2025-02-20":{"status":404,"ok":false,"missing":["EXEC-TASK-NO-CONTRACT|task:dix-a-t1","EXEC-CONTRACT-MISSING|contract:dix-a-c2","EXEC-BLOCKED-TASKS|project:dix-a-p1,task:dix-a-t3","EXEC-BLOCKED-TASKS|project:dix-a-p2,task:dix-a-t4","EXEC-PERMIT-CORRECTIONS|permit:dix-a-pm1,permit_correction:
+  [RED]   DEVOS-DI1-EVAL-005 — Every finding carries ruleId, ruleVersion (= registry), organization, severity, type, explanation, sources, asOf and conditionKey :: {"status":404,"bad":[]}
+  [RED]   DEVOS-DI1-DETERMINISM-001 — Same state + same asOf = same findings (deep-equal across repeated evaluations and across sessions) :: {"statuses":[404,404,404],"equal":true}
+  [RED]   DEVOS-DI1-TENANT-CAPITAL-001 — Capital intelligence is tenant scoped: the tenant's own pending capital deadlines are surfaced (legacy /api/alerts and findings), foreign capital is not :: {"org1PendingWithDeadline":["cap2"],"org1CapitalAlerts":0,"alphaCapitalAlerts":[],"alertsTypes":["missing-contract","missing-contract","missing-contract","blocked-tasks","permit-corrections","gc-contract"],"findingsStatus":404,"capFindings":[]}
+  --- B. Findings (persistence & lifecycle) ---
+  [RED]   DEVOS-DI1-FIND-001 — Persisted evaluation stores the oracle findings as OPEN with ids, first-detection time and full fields :: {"status":404,"created":0,"ok":false,"missing":["EXEC-TASK-NO-CONTRACT|task:dix-a-t1","EXEC-CONTRACT-MISSING|contract:dix-a-c2","EXEC-BLOCKED-TASKS|project:dix-a-p1,task:dix-a-t3","EXEC-BLOCKED-TASKS|project:dix-a-p2,task:dix-a-t4","EXEC-PERMIT-CORRECTIONS|permit:dix-a-pm1,permit_correction:dix-a-co
+  [RED]   DEVOS-DI1-FIND-002 — Re-evaluating unchanged state creates no duplicates and keeps the same finding ids :: {"status":404,"before":0,"after":0}
+  [RED]   DEVOS-DI1-FIND-003 — A condition that persists keeps its finding while severity follows asOf (src1 warning → critical, same id) :: {"after":[]}
+  [RED]   DEVOS-DI1-FIND-004 — A condition that disappears resolves its finding (CONDITION_CLEARED) without deleting it :: {"status":404}
+  [RED]   DEVOS-DI1-FIND-005 — A resolved condition that reappears opens a NEW finding linked to its predecessor; the predecessor stays RESOLVED :: {"now":[]}
+  [RED]   DEVOS-DI1-FIND-006 — A finding from an older rule version is superseded (SUPERSEDED_BY_RULE_VERSION) and replaced at the registry version :: DI tables absent
+  [RED]   DEVOS-DI1-FINDING-LIFECYCLE-001 — Acknowledge → resolve is durable, history-preserving, attributed and EF-3 audited :: precondition: no active alpha finding
+  [RED]   DEVOS-DI1-FIND-007 — Invalid lifecycle moves are refused: acknowledging/resolving a RESOLVED finding → 409; body cannot rewrite sources, severity or rule :: precondition: no resolved finding
+  [RED]   DEVOS-DI1-TRACE-001 — Every finding traces to existing records of the same organization :: {"checked":0,"problems":["dix-alpha: list → 404","dix-beta: list → 404","dix-gamma: list → 404"]}
+  --- C. Adversarial ---
+  [RED]   DEVOS-DI1-CROSS-TENANT-001 — Foreign tenant information cannot affect another tenant's findings (dry-run oracle, persisted state, lists, direct reads, alerts) :: {"betaEval":404,"alphaUnchanged":true,"peek":0,"leaks":false}
+  [RED]   DEVOS-DI1-ADV-LIST-001 — Lists never include another tenant's relationships, properties, opportunities or findings :: {"relationships":{"betaSeesOwn":false,"alphaStatus":404,"leak":false},"properties":{"betaSeesOwn":false,"alphaStatus":404,"leak":false},"opportunities":{"betaSeesOwn":false,"alphaStatus":404,"leak":false},"findings":{"betaSeesOwn":false,"alphaStatus":404,"leak":false}}
+  [RED]   DEVOS-DI1-ADV-DIRECT-001 — Direct reads of another tenant's records return 404 (relationship, property, site intelligence, opportunity, readiness, history, finding) :: {"ownerCanRead":404,"out":{"/api/di/relationships/dix-b-rel1":404,"/api/di/properties/dix-b-prop1":404,"/api/di/properties/dix-b-prop1/site-intelligence":404,"/api/di/opportunities/dix-b-opp1":404,"/api/di/opportunities/dix-b-opp1/readiness":404,"/api/di/opportunities/dix-b-opp1/history":404}}
+  [RED]   DEVOS-DI1-ADV-MUTATE-001 — Mutations against another tenant's records return 404 and leave them unchanged :: {"relPatch":404,"propPatch":404,"sitePut":404,"oppPatch":404,"oppTransition":404,"findingAck":"no beta finding","findingResolve":"no beta finding"}
+  [RED]   DEVOS-DI1-ADV-REF-001 — Foreign references in request bodies are refused with 404: property, relationship, responsible user :: {"control":404,"attempts":{"foreignProperty":404,"foreignRelationship":404,"foreignUser":404,"patchToForeignProperty":"no control"}}
+  [RED]   DEVOS-DI1-ADV-FORGE-ORG-001 — Forged organization context is refused: foreign X-Organization-Id → 403; organizationId in the body is ignored :: {"own":404,"forged":404,"forgedEval":404,"bodyOrg":[404,null]}
+  [RED]   DEVOS-DI1-ADV-MASS-001 — Mass assignment on update cannot change id, organization, status, provenance recorder or timestamps :: precondition: create → 404
+  [RED]   DEVOS-DI1-ADV-LIFECYCLE-001 — Unauthorized lifecycle actions are refused: viewer cannot transition, acknowledge, resolve or evaluate :: {"read":404,"transition":"no opp","acknowledge":"no finding","resolve":"no finding","evaluate":404}
+  [RED]   DEVOS-DI1-ADV-SPOOF-001 — Findings cannot be created or forged by clients: POST /api/di/findings is not allowed and creates nothing :: {"list":404,"forged":404,"before":null,"after":null}
+  [RED]   DEVOS-DI1-TENANT-PARTNER-001 — Partner intelligence is tenant scoped: no foreign partner identity ever reaches a tenant's alerts or findings :: {"plantedViaApi":201,"plantedViaDb":null,"alertsStatus":200,"leakInAlerts":["Beta Foreign Partner ZQX"],"findingsStatus":404,"leakInFindings":null}
+  [RED]   DEVOS-DI1-ADV-EXECREF-001 — Intelligence inputs cannot be spoofed with foreign execution records: tasks and contracts cannot reference another tenant's partner or contract (404, not 201/500) :: {"control":201,"statuses":{"createForeignPartner":201,"createForeignContract":500,"updateForeignContract":500,"contractForeignPartner":201},"foreignContractSuppressesAlert":false}
+  --- D. Integration ---
+  [RED]   DEVOS-DI1-AUTHZ-001 — Authorization matrix: each role gets exactly its permitted DI operations (viewer: reads 2xx, writes 403); developer: all 2xx :: {"precondition":"workbench resources missing","ids":{}}
+  [RED]   DEVOS-DI1-AUTHZ-002 — Unauthenticated requests to DI endpoints return 401 :: [["GET /api/di/relationships",404],["POST /api/di/relationships",404],["GET /api/di/relationships/:relationshipId",404],["PATCH /api/di/relationships/:relationshipId",404],["GET /api/di/properties",404],["POST /api/di/properties",404],["GET /api/di/properties/:propertyId",404],["PATCH /api/di/proper
+  [RED]   DEVOS-DI1-AUTHZ-003 — Role → DI permission mapping matches the matrix exactly; platform-admin holds no DI permission :: [{"role":"org-admin","have":[],"want":["relationships:read","relationships:create","relationships:update","properties:read","properties:create","properties:update","opportunities:read","opportunities:create","opportunities:update","opportunities:transition","site_intelligence:read","site_intelligenc
+  [RED]   DEVOS-DI1-AUDIT-001 — Representative DI-1 mutations are captured by the EF-3 ledger with actor and organization :: {"relationship create":false,"relationship change":false,"property create":false,"property change":false,"opportunity lifecycle":false,"site intelligence change":false,"finding acknowledge/resolve":false}
+  [GREEN] DEVOS-DI1-AUDIT-002 — EF-3 chains of every DI tenant still verify cryptographically after all DI-1 activity
+  [GREEN] DEVOS-DI1-EF3-FROZEN-001 — Frozen EF-3 artifacts are byte-identical to the accepted EF-3 release
+  [GREEN] DEVOS-DI1-LEGACY-001 — Legacy /api/alerts keeps producing the existing rule outputs for the canonical tenant (missing-contract, blocked-tasks, permit-corrections, gc-contract)
+  [RED]   DEVOS-DI1-LEGACY-002 — Rule parity: every legacy alert for the canonical tenant has a corresponding finding from its registry rule citing the same record :: {"alerts":200,"evaluate":404}
+DEVOS-DI-1 ACCEPTANCE: 3 GREEN, 63 RED (Total: 66)
+                   MASTER GATE STATUS SUMMARY                  
+  0. DEVOS-CLEAN-DB GATE     : 5/5 PASSED  [GREEN — EMPTY DB BOOTSTRAP VERIFIED]
+  1. DEVOS-V1-REGRESSION   : 55/55 PASSED  [GREEN]
+  2. DEVOS-GOLDEN-001       : 15/15 PASSED  [GREEN]
+  3. DEVOS-SEC-KNOWN-DEBT   : 3/3 PASSED  [GREEN — P0 SENTINELS ENFORCED]
+  4. DEVOS-EF-1 ACCEPTANCE  : 13/13 PASSED  [GREEN — PERSISTENCE VERIFIED]
+  5. DEVOS-EF-2 ACCEPTANCE  : 29/29 PASSED  [GREEN]
+  6. DEVOS-GOLDEN-SEC-001 : 15/15 PASSED  [GREEN]
+  7. DEVOS-EF-3 ACCEPTANCE  : 38/38 PASSED  [GREEN]
+       original EF-3       : 11/11
+       adversarial EF-3    : 27/27
+  8. DEVOS-DI-1 RED GATE    : 3/66 GREEN  [LOCKED — matches baseline: 63 expected RED]
+
+# Oracle cross-check: hand-written oracle vs UNMODIFIED legacy rule code (routes/alerts.js generateAlerts),
+# fixture data, fixed clock = asOf, capital input correctly tenant-scoped. R3 compared separately (contract changes R3).
+ALPHA-2025-02-01: AGREES | legacy blocked: EXEC-BLOCKED-TASKS(legacy-conflated):dix-a-p1:warning | oracle blocked: dix-a-p1+dix-a-t3 dix-a-p2+dix-a-t4
+ALPHA-2025-02-20: AGREES | legacy blocked: EXEC-BLOCKED-TASKS(legacy-conflated):dix-a-p1:warning | oracle blocked: dix-a-p1+dix-a-t3 dix-a-p2+dix-a-t4
+ALPHA-2025-01-01: AGREES | legacy blocked: EXEC-BLOCKED-TASKS(legacy-conflated):dix-a-p1:warning | oracle blocked: dix-a-p1+dix-a-t3 dix-a-p2+dix-a-t4
+BETA-2025-02-01: AGREES | legacy blocked: EXEC-BLOCKED-TASKS(legacy-conflated):dix-b-p1:warning | oracle blocked: dix-b-p1+dix-b-t1

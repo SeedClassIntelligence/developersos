@@ -4,8 +4,10 @@
 
 const { query } = require('../pool');
 
-async function getAll() {
-  const { rows } = await query('SELECT * FROM partners ORDER BY id ASC');
+// organizationId is required: partners are tenant-owned (partners.org_id).
+async function getAll(organizationId) {
+  if (!organizationId) throw new Error('partnersRepo.getAll requires an organizationId');
+  const { rows } = await query('SELECT * FROM partners WHERE org_id = $1 ORDER BY id ASC', [organizationId]);
   return rows.map(r => ({
     id: r.id,
     name: r.name,

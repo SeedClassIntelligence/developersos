@@ -91,6 +91,7 @@ app.use('/api/documents', protect, resolveOrganizationContext, require('./routes
 app.use('/api/alerts',    protect, resolveOrganizationContext, require('./routes/alerts'));
 app.use('/api/team',      protect, resolveOrganizationContext, require('./routes/team'));
 app.use('/api/audit',     protect, resolveOrganizationContext, require('./routes/audit'));
+app.use('/api/di',        protect, resolveOrganizationContext, require('./routes/di'));
 app.use('/api/admin',     protect, resolveOrganizationContext, adminOnly, require('./routes/admin'));
 
 // ── HEALTH CHECK (public) ──────────────────────

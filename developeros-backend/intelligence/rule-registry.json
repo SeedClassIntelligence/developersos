@@ -1,0 +1,93 @@
+{
+  "registryVersion": 1,
+  "description": "DeveloperOS deterministic rule registry (DEVOS-DI-1). Every active rule is listed; the engine refuses to start if an implementation and this registry disagree. Rules surface information and execution risk; none makes a GO/NO-GO or other policy determination.",
+  "rules": [
+    {
+      "ruleId": "EXEC-TASK-NO-CONTRACT",
+      "version": 1,
+      "title": "Incomplete task has no contract",
+      "status": "ACTIVE",
+      "legacyAlertRule": "R1",
+      "findingType": "missing-contract",
+      "inputDomains": ["tasks", "partners"],
+      "sourceTypes": ["task"],
+      "severityPolicy": { "type": "fixed", "severity": "critical" },
+      "timeDependent": false
+    },
+    {
+      "ruleId": "EXEC-CONTRACT-MISSING",
+      "version": 1,
+      "title": "Contract missing while tasks depend on it",
+      "status": "ACTIVE",
+      "legacyAlertRule": "R2",
+      "findingType": "missing-contract",
+      "inputDomains": ["contracts", "partners"],
+      "sourceTypes": ["contract"],
+      "severityPolicy": { "type": "fixed", "severity": "critical" },
+      "timeDependent": false
+    },
+    {
+      "ruleId": "EXEC-BLOCKED-TASKS",
+      "version": 1,
+      "title": "Project has blocked tasks",
+      "status": "ACTIVE",
+      "legacyAlertRule": "R3",
+      "findingType": "blocked-tasks",
+      "inputDomains": ["projects", "tasks"],
+      "sourceTypes": ["project", "task"],
+      "severityPolicy": { "type": "fixed", "severity": "warning" },
+      "timeDependent": false,
+      "reconciliation": "One finding per project (legacy R3 emitted one alert for all projects, attributed to the first)."
+    },
+    {
+      "ruleId": "EXEC-PERMIT-CORRECTIONS",
+      "version": 1,
+      "title": "Permit has open city corrections",
+      "status": "ACTIVE",
+      "legacyAlertRule": "R4",
+      "findingType": "permit-corrections",
+      "inputDomains": ["permits", "permit_corrections"],
+      "sourceTypes": ["permit", "permit_correction"],
+      "severityPolicy": { "type": "fixed", "severity": "warning" },
+      "timeDependent": false
+    },
+    {
+      "ruleId": "EXEC-CAPITAL-DEADLINE",
+      "version": 1,
+      "title": "Pending capital commitment deadline approaching or passed",
+      "status": "ACTIVE",
+      "legacyAlertRule": "R5",
+      "findingType": "capital-deadline",
+      "inputDomains": ["capital_stacks", "capital_sources", "projects"],
+      "sourceTypes": ["capital_stack", "capital_source"],
+      "severityPolicy": { "type": "days-until-deadline", "basis": "round((deadline - asOf) / 1 day)", "emitWhenBelowDays": 60, "criticalBelowDays": 30, "otherwise": "warning", "overdue": "critical" },
+      "timeDependent": true,
+      "reconciliation": "Inputs tenant-scoped (legacy call omitted organizationId and returned nothing); time taken only from asOf."
+    },
+    {
+      "ruleId": "EXEC-GC-CONTRACT-PENDING",
+      "version": 1,
+      "title": "General contractor contract not executed as construction approaches",
+      "status": "ACTIVE",
+      "legacyAlertRule": "R6",
+      "findingType": "gc-contract",
+      "inputDomains": ["projects", "contracts"],
+      "sourceTypes": ["project", "contract"],
+      "severityPolicy": { "type": "fixed", "severity": "warning" },
+      "timeDependent": false
+    },
+    {
+      "ruleId": "DI-OPPORTUNITY-INFORMATION-REQUIRED",
+      "version": 1,
+      "title": "Opportunity needs information before qualification",
+      "status": "ACTIVE",
+      "legacyAlertRule": null,
+      "findingType": "information-required",
+      "inputDomains": ["di_opportunities", "di_properties", "di_site_facts"],
+      "sourceTypes": ["opportunity"],
+      "severityPolicy": { "type": "fixed", "severity": "info" },
+      "timeDependent": false,
+      "note": "Information readiness only. Missing information is not a negative determination."
+    }
+  ]
+}

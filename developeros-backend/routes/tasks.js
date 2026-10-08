@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const tasksRepo = require('../db/repositories/tasks.repo');
 const { requirePermission, authorizeResource, authorizeProjectParent } = require('../middleware/auth');
+const { authorizeExecutionReferences } = require('../middleware/references');
 
 // GET tasks (optionally filter by projectId, status, discipline)
 router.get('/', requirePermission('tasks:read'), async (req, res, next) => {
@@ -35,7 +36,7 @@ router.get('/:id', requirePermission('tasks:read'), authorizeResource('task'), a
 });
 
 // CREATE task
-router.post('/', requirePermission('tasks:create'), authorizeProjectParent, async (req, res, next) => {
+router.post('/', requirePermission('tasks:create'), authorizeProjectParent, authorizeExecutionReferences(), async (req, res, next) => {
   try {
     const t = await tasksRepo.create(req.body);
     res.status(201).json(t);
@@ -45,7 +46,7 @@ router.post('/', requirePermission('tasks:create'), authorizeProjectParent, asyn
 });
 
 // UPDATE task
-router.put('/:id', requirePermission('tasks:update'), authorizeResource('task'), async (req, res, next) => {
+router.put('/:id', requirePermission('tasks:update'), authorizeResource('task'), authorizeExecutionReferences({ taskProjectFromRow: true }), async (req, res, next) => {
   try {
     const t = await tasksRepo.update(req.params.id, req.body);
     if (!t) return res.status(404).json({ error: 'Task not found' });

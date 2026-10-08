@@ -1,0 +1,143 @@
+{
+  "title": "DEVOS-DI-2 qualification oracle",
+  "contract": "docs/DEVOS-DI2-ACCEPTANCE-CONTRACT.md §3, §7, §8 (revision 2: amendments A1–A4)",
+  "derivation": "Expected outcomes and per-criterion results are derived by hand from the base facts, the per-opportunity overrides and the policy criteria, using the contract's evaluation rules. Facts, attributes and location evidence are recorded at fixed instants so asOf selection is exact. Revision 2 (A1–A4): NOT_APPLICABLE needs criterion-level permission (allowNotApplicable); legacy malformed stored values give TYPE_MISMATCH; property.* subjects read versioned location evidence effective at asOf, never the current Property fields (the fixture sets every current di_properties.region to the sentinel currentPropertyRegion so any fallback is visible); Gate 0 is computed from site-fact versions at asOf.",
+  "currentPropertyRegion": "ZZ",
+  "recordedAt": "2025-01-01T00:00:00.000Z",
+  "defaultAsOf": "2025-06-01T00:00:00.000Z",
+  "tenants": [
+    { "id": "dq-alpha", "name": "DI-2 Alpha (KG-like proving-ground tenant)" },
+    { "id": "dq-beta", "name": "DI-2 Beta (different policy tenant)" },
+    { "id": "dq-gamma", "name": "DI-2 Gamma workbench" }
+  ],
+  "users": [
+    { "id": "dq-u-alpha-admin", "email": "alpha.admin@di2.test", "organizationId": "dq-alpha", "roleId": "org-admin" },
+    { "id": "dq-u-alpha-dev", "email": "alpha.dev@di2.test", "organizationId": "dq-alpha", "roleId": "developer" },
+    { "id": "dq-u-alpha-viewer", "email": "alpha.viewer@di2.test", "organizationId": "dq-alpha", "roleId": "viewer" },
+    { "id": "dq-u-beta-admin", "email": "beta.admin@di2.test", "organizationId": "dq-beta", "roleId": "org-admin" },
+    { "id": "dq-u-beta-dev", "email": "beta.dev@di2.test", "organizationId": "dq-beta", "roleId": "developer" },
+    { "id": "dq-u-gamma-admin", "email": "gamma.admin@di2.test", "organizationId": "dq-gamma", "roleId": "org-admin" },
+    { "id": "dq-u-gamma-dev", "email": "gamma.dev@di2.test", "organizationId": "dq-gamma", "roleId": "developer" },
+    { "id": "dq-u-gamma-viewer", "email": "gamma.viewer@di2.test", "organizationId": "dq-gamma", "roleId": "viewer" }
+  ],
+  "policies": {
+    "alpha": {
+      "organizationId": "dq-alpha",
+      "name": "Alpha Affordable Infill Policy",
+      "criteria": [
+        { "key": "units_min", "label": "At least 125 proposed units", "kind": "HARD_VETO", "subject": "candidate.proposed_units", "operator": "gte", "operand": 125, "rationale": "Tenant scale threshold" },
+        { "key": "no_flood", "label": "Outside special flood hazard areas", "kind": "HARD_VETO", "subject": "site.flood_zone", "operator": "not_in", "operand": ["A", "AE", "V", "VE"], "rationale": null },
+        { "key": "entitlement", "label": "No pending discretionary entitlement", "kind": "HOLD", "subject": "site.entitlement_path", "operator": "neq", "operand": "discretionary-pending", "rationale": null, "allowNotApplicable": true },
+        { "key": "market", "label": "Within target market", "kind": "WATCH", "subject": "property.region", "operator": "in", "operand": ["CA"], "rationale": null },
+        { "key": "zoning", "label": "Residential-capable zoning", "kind": "CONDITION", "subject": "site.zoning", "operator": "in", "operand": ["R3", "R4", "R5", "C2"], "rationale": "Otherwise requires rezoning" },
+        { "key": "lot_min", "label": "Lot at least 20,000 sq ft", "kind": "CONDITION", "subject": "site.lot_area_sqft", "operator": "gte", "operand": 20000, "rationale": null }
+      ]
+    },
+    "beta": {
+      "organizationId": "dq-beta",
+      "name": "Beta Workforce Housing Policy",
+      "criteria": [
+        { "key": "units_min", "label": "At least 40 proposed units", "kind": "HARD_VETO", "subject": "candidate.proposed_units", "operator": "gte", "operand": 40, "rationale": null },
+        { "key": "no_flood", "label": "Outside special flood hazard areas", "kind": "HARD_VETO", "subject": "site.flood_zone", "operator": "not_in", "operand": ["A", "AE", "V", "VE"], "rationale": null },
+        { "key": "dev_type", "label": "New construction or adaptive reuse", "kind": "CONDITION", "subject": "candidate.development_type", "operator": "in", "operand": ["new_construction", "adaptive_reuse"], "rationale": null }
+      ]
+    }
+  },
+  "base": {
+    "region": "CA",
+    "location": { "city": "Fixture City", "postalCode": null, "country": "US" },
+    "facts": {
+      "apn": { "value": "1234-001-001", "status": "KNOWN" },
+      "ownership": { "value": "Private seller", "status": "KNOWN" },
+      "lot_area_sqft": { "value": 30000, "status": "KNOWN" },
+      "zoning": { "value": "R4", "status": "KNOWN" },
+      "current_use": { "value": "Vacant", "status": "KNOWN" },
+      "acquisition_basis": { "value": 5000000, "status": "KNOWN" },
+      "flood_zone": { "value": "X", "status": "KNOWN" },
+      "entitlement_path": { "value": "by-right", "status": "KNOWN" }
+    },
+    "attributes": {
+      "proposed_units": { "value": 150, "status": "KNOWN" },
+      "development_type": { "value": "new_construction", "status": "KNOWN" }
+    }
+  },
+  "opportunities": [
+    { "id": "dq-a-o1", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "All criteria pass",
+      "expected": { "outcome": "GO", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o2", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Hard veto: 90 units < 125",
+      "attributes": { "proposed_units": { "value": 90, "status": "KNOWN" } },
+      "expected": { "outcome": "NO_GO", "results": { "units_min": "FAIL", "no_flood": "PASS", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o3", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Hard veto: flood zone AE",
+      "facts": { "flood_zone": { "value": "AE", "status": "KNOWN" } },
+      "expected": { "outcome": "NO_GO", "results": { "units_min": "PASS", "no_flood": "FAIL", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o4", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "HOLD: discretionary entitlement pending",
+      "facts": { "entitlement_path": { "value": "discretionary-pending", "status": "KNOWN" } },
+      "expected": { "outcome": "HOLD", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "FAIL", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o5", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "WATCH: outside target market",
+      "region": "NV",
+      "expected": { "outcome": "WATCH", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "PASS", "market": "FAIL", "zoning": "PASS", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o6", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "CONDITIONAL_GO: industrial zoning",
+      "facts": { "zoning": { "value": "M1", "status": "KNOWN" } },
+      "expected": { "outcome": "CONDITIONAL_GO", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "PASS", "market": "PASS", "zoning": "FAIL", "lot_min": "PASS" }, "conditions": ["zoning"] } },
+    { "id": "dq-a-o7", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Precedence: HOLD over WATCH over CONDITION",
+      "region": "NV",
+      "facts": { "zoning": { "value": "M1", "status": "KNOWN" }, "entitlement_path": { "value": "discretionary-pending", "status": "KNOWN" } },
+      "expected": { "outcome": "HOLD", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "FAIL", "market": "FAIL", "zoning": "FAIL", "lot_min": "PASS" }, "conditions": ["zoning"] } },
+    { "id": "dq-a-o8", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Flood status UNKNOWN: missing information is not NO_GO",
+      "facts": { "flood_zone": { "value": null, "status": "UNKNOWN" } },
+      "expected": { "outcome": "INFORMATION_REQUIRED", "results": { "units_min": "PASS", "no_flood": "UNKNOWN", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "reasons": { "no_flood": "UNKNOWN" }, "conditions": [] } },
+    { "id": "dq-a-o9", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Known veto is decisive even with unknown facts",
+      "attributes": { "proposed_units": { "value": 90, "status": "KNOWN" } },
+      "facts": { "flood_zone": { "value": null, "status": "UNKNOWN" } },
+      "expected": { "outcome": "NO_GO", "results": { "units_min": "FAIL", "no_flood": "UNKNOWN", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o10", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "NOT_APPLICABLE satisfies a criterion that explicitly permits it (entitlement: allowNotApplicable = true)",
+      "facts": { "entitlement_path": { "value": null, "status": "NOT_APPLICABLE" } },
+      "expected": { "outcome": "GO", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "NOT_APPLICABLE", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o11", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Non-numeric lot area: TYPE_MISMATCH is information required",
+      "facts": { "lot_area_sqft": { "value": "about an acre", "status": "KNOWN" } },
+      "expected": { "outcome": "INFORMATION_REQUIRED", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "UNKNOWN" }, "reasons": { "lot_min": "TYPE_MISMATCH" }, "conditions": [] } },
+    { "id": "dq-a-o12", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Flood fact never recorded: MISSING",
+      "omitFacts": ["flood_zone"],
+      "expected": { "outcome": "INFORMATION_REQUIRED", "results": { "units_min": "PASS", "no_flood": "UNKNOWN", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "reasons": { "no_flood": "MISSING" }, "conditions": [] } },
+    { "id": "dq-a-o13", "tenant": "dq-alpha", "policy": "alpha", "status": "SCREENING", "case": "Gate 0 lifecycle precondition: not ready for qualification",
+      "expected": { "httpStatus": 409 } },
+    { "id": "dq-a-o14", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "Gate 0 regressed at asOf: zoning became UNKNOWN",
+      "facts": { "zoning": { "value": null, "status": "UNKNOWN" } },
+      "expected": { "outcome": "INFORMATION_REQUIRED", "gate0Missing": ["site.zoning"], "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "PASS", "market": "PASS", "zoning": "UNKNOWN", "lot_min": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o15", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "case": "asOf selects attribute versions: 150 units recorded 2025-01-01, revised to 90 on 2025-03-01",
+      "attributeHistory": { "proposed_units": [{ "value": 90, "status": "KNOWN", "recordedAt": "2025-03-01T00:00:00.000Z" }] },
+      "evaluations": [
+        { "asOf": "2025-02-01T00:00:00.000Z", "outcome": "GO", "units_min": { "result": "PASS", "observedValue": 150, "observedVersion": 1 } },
+        { "asOf": "2025-04-01T00:00:00.000Z", "outcome": "NO_GO", "units_min": { "result": "FAIL", "observedValue": 90, "observedVersion": 2 } }
+      ] },
+    { "id": "dq-b-o1", "tenant": "dq-beta", "policy": "beta", "status": "READY_FOR_QUALIFICATION", "case": "Identical facts to dq-a-o2 (90 units) under Beta's policy",
+      "attributes": { "proposed_units": { "value": 90, "status": "KNOWN" } },
+      "expected": { "outcome": "GO", "results": { "units_min": "PASS", "no_flood": "PASS", "dev_type": "PASS" }, "conditions": [] } },
+    { "id": "dq-a-o16", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "amendment": "A1", "case": "Flood zone NOT_APPLICABLE on a hard veto that does not permit it: not satisfied, information required",
+      "facts": { "flood_zone": { "value": null, "status": "NOT_APPLICABLE" } },
+      "expected": { "outcome": "INFORMATION_REQUIRED", "results": { "units_min": "PASS", "no_flood": "UNKNOWN", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "reasons": { "no_flood": "NOT_APPLICABLE_NOT_PERMITTED" }, "conditions": [] } },
+    { "id": "dq-a-o17", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "amendment": "A2", "case": "Legacy malformed candidate value (proposed_units stored as the string \"150\" by a historical import): TYPE_MISMATCH, information required; the same value is rejected on a new write",
+      "attributes": { "proposed_units": { "value": "150", "status": "KNOWN", "legacy": true } },
+      "expected": { "outcome": "INFORMATION_REQUIRED", "results": { "units_min": "UNKNOWN", "no_flood": "PASS", "entitlement": "PASS", "market": "PASS", "zoning": "PASS", "lot_min": "PASS" }, "reasons": { "units_min": "TYPE_MISMATCH" }, "conditions": [] } },
+    { "id": "dq-a-o18", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "amendment": "A3", "case": "asOf selects location evidence: region CA recorded 2025-01-01, revised to NV on 2025-03-01 (current Property region is the sentinel ZZ)",
+      "locationHistory": [{ "region": "NV", "recordedAt": "2025-03-01T00:00:00.000Z" }],
+      "evaluations": [
+        { "asOf": "2025-02-01T00:00:00.000Z", "outcome": "GO", "market": { "result": "PASS", "observedValue": "CA", "observedVersion": 1 } },
+        { "asOf": "2025-04-01T00:00:00.000Z", "outcome": "WATCH", "market": { "result": "FAIL", "observedValue": "NV", "observedVersion": 2 } }
+      ] },
+    { "id": "dq-a-o19", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "amendment": "A3", "case": "No location evidence recorded: property.region is MISSING (no fallback to the current Property region)",
+      "omitLocation": true,
+      "expected": { "outcome": "INFORMATION_REQUIRED", "results": { "units_min": "PASS", "no_flood": "PASS", "entitlement": "PASS", "market": "UNKNOWN", "zoning": "PASS", "lot_min": "PASS" }, "reasons": { "market": "MISSING" }, "conditions": [] } },
+    { "id": "dq-a-o20", "tenant": "dq-alpha", "policy": "alpha", "status": "READY_FOR_QUALIFICATION", "amendment": "A4", "case": "Historical Gate 0: zoning first recorded 2025-03-01. Currently READY (run precondition passes), but Gate 0 at 2025-02-01 is computed from the site-fact versions then in force",
+      "omitFacts": ["zoning"],
+      "factHistory": { "zoning": [{ "value": "R4", "status": "KNOWN", "recordedAt": "2025-03-01T00:00:00.000Z" }] },
+      "evaluations": [
+        { "asOf": "2025-02-01T00:00:00.000Z", "outcome": "INFORMATION_REQUIRED", "gate0Status": "INFORMATION_REQUIRED", "gate0Missing": ["site.zoning"], "zoning": { "result": "UNKNOWN", "reason": "MISSING", "observedValue": null, "observedVersion": null } },
+        { "asOf": "2025-04-01T00:00:00.000Z", "outcome": "GO", "gate0Status": "READY_FOR_QUALIFICATION", "gate0Missing": [], "zoning": { "result": "PASS", "observedValue": "R4", "observedVersion": 1 } }
+      ] }
+  ],
+  "tenantConfigurabilityProof": {
+    "claim": "The same facts (90 proposed units, otherwise identical) yield NO_GO under dq-alpha's policy and GO under dq-beta's: the unit threshold is tenant policy data, not platform law.",
+    "pair": ["dq-a-o2", "dq-b-o1"]
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "title": "DeveloperOS legacy alert rule inventory (routes/alerts.js) \u2014 recorded before DI-1 implementation",
+  "baselineCommit": "1b4115f",
+  "engine": {
+    "endpoint": "GET /api/alerts",
+    "permission": "projects:read",
+    "inputs": {
+      "tasks": "tasksRepo.getAll({ organizationId }) \u2014 tenant scoped",
+      "projects": "projectsRepo.getAll(organizationId) \u2014 tenant scoped",
+      "partners": "partnersRepo.getAll() \u2014 NOT tenant scoped: every organization's partners are loaded",
+      "contracts": "contractsRepo.getAll(null, organizationId) \u2014 tenant scoped",
+      "permits": "permitsRepo.getAll(null, organizationId) \u2014 tenant scoped",
+      "capitalStacks": "capitalRepo.getAll() \u2014 called WITHOUT organizationId; the repository filters projects.organization_id = $1 with $1 = NULL and therefore returns no rows"
+    },
+    "clock": "Every alert stamps createdAt = new Date(); R5 computes days remaining from new Date()",
+    "persistence": "none \u2014 alerts are recomputed per request and never stored",
+    "sorting": "critical, warning, info"
+  },
+  "rules": [
+    {
+      "legacyRule": "R1",
+      "mapsToRuleId": "EXEC-TASK-NO-CONTRACT",
+      "alertType": "missing-contract",
+      "currentBehavior": "For every task with status != 'complete' and no contractId, emit one alert (id alert-nocontract-<taskId>). Description renders the task's partner name via partnerName(partnerId).",
+      "requiredInputs": [
+        "tasks",
+        "projects",
+        "partners"
+      ],
+      "tenantScoping": "Tasks scoped. Partner names are looked up in the unscoped partner list, so a task that references a foreign organization's partner renders that partner's name.",
+      "timeDependency": "createdAt only (non-semantic)",
+      "severity": "critical",
+      "sourceRecords": "taskId",
+      "knownDefects": [
+        "DI1-DEFECT-PARTNER: foreign partner name disclosed through partnerName() when a task references another organization's partner (POST/PUT /api/tasks and POST /api/contracts accept a foreign partnerId; partners.id has no same-tenant constraint)",
+        "DI1-DEFECT-REF-STATUS: a foreign contractId IS rejected by the existing database constraint tasks_contract_project_fkey (tenant integrity holds), but the API surfaces it as HTTP 500 instead of the 404 concealment response. Corrected after the first RED run: the pre-run inventory wrongly stated that the API accepts it."
+      ],
+      "expectedOutput": "One finding per incomplete task without a contract; sources [task]"
+    },
+    {
+      "legacyRule": "R2",
+      "mapsToRuleId": "EXEC-CONTRACT-MISSING",
+      "alertType": "missing-contract",
+      "currentBehavior": "For every contract with status 'missing' and linkedTaskCount > 0, emit one alert (id alert-contract-<contractId>), titled with the partner name.",
+      "requiredInputs": [
+        "contracts",
+        "projects",
+        "partners"
+      ],
+      "tenantScoping": "Contracts scoped; partner name lookup unscoped (same partner defect as R1).",
+      "timeDependency": "createdAt only (non-semantic)",
+      "severity": "critical",
+      "sourceRecords": "contractId",
+      "knownDefects": [
+        "DI1-DEFECT-PARTNER (title renders partner name from the unscoped partner list)"
+      ],
+      "expectedOutput": "One finding per missing contract with linked tasks; sources [contract]"
+    },
+    {
+      "legacyRule": "R3",
+      "mapsToRuleId": "EXEC-BLOCKED-TASKS",
+      "alertType": "blocked-tasks",
+      "currentBehavior": "Collect ALL blocked tasks across ALL projects and emit ONE alert whose id and projectId are those of the first blocked task's project; the description lists every blocked task title.",
+      "requiredInputs": [
+        "tasks",
+        "projects"
+      ],
+      "tenantScoping": "Scoped.",
+      "timeDependency": "createdAt only (non-semantic)",
+      "severity": "warning",
+      "sourceRecords": "none (only the first project's id)",
+      "knownDefects": [
+        "DI1-DEFECT-R3-CONFLATION: blocked tasks of several projects are reported as one alert attributed to the first project \u2014 not traceable to the correct records"
+      ],
+      "expectedOutput": "One finding per project that has blocked tasks; sources [project, ...its blocked tasks]"
+    },
+    {
+      "legacyRule": "R4",
+      "mapsToRuleId": "EXEC-PERMIT-CORRECTIONS",
+      "alertType": "permit-corrections",
+      "currentBehavior": "For every permit with status 'corrections', emit one alert (id alert-permit-<permitId>) counting corrections whose status != 'complete'.",
+      "requiredInputs": [
+        "permits",
+        "permit_corrections",
+        "projects"
+      ],
+      "tenantScoping": "Scoped.",
+      "timeDependency": "createdAt only (non-semantic)",
+      "severity": "warning",
+      "sourceRecords": "permitId",
+      "knownDefects": [],
+      "expectedOutput": "One finding per permit in corrections; sources [permit, ...open corrections]"
+    },
+    {
+      "legacyRule": "R5",
+      "mapsToRuleId": "EXEC-CAPITAL-DEADLINE",
+      "alertType": "capital-deadline",
+      "currentBehavior": "For every capital source with status 'pending' and a deadline, daysLeft = round((deadline - now)/1 day); emit when daysLeft < 60; critical when < 30 else warning (id alert-capital-<sourceId>).",
+      "requiredInputs": [
+        "capital_stacks",
+        "capital_sources",
+        "projects"
+      ],
+      "tenantScoping": "BROKEN: capitalRepo.getAll() is called without organizationId and returns no rows for any tenant.",
+      "timeDependency": "SEMANTIC: reads the system clock (new Date()) to decide whether and how severely to alert",
+      "severity": "critical (< 30 days, including overdue) / warning (< 60 days)",
+      "sourceRecords": "none emitted (no capital source or stack id in the alert)",
+      "knownDefects": [
+        "DEVOS-DI1-TENANT-CAPITAL-001: rule never fires \u2014 valid tenant capital information is omitted",
+        "System-clock dependency (non-deterministic)",
+        "No source record identifiers"
+      ],
+      "expectedOutput": "One finding per qualifying pending capital source relative to explicit asOf; sources [capital_stack, capital_source]"
+    },
+    {
+      "legacyRule": "R6",
+      "mapsToRuleId": "EXEC-GC-CONTRACT-PENDING",
+      "alertType": "gc-contract",
+      "currentBehavior": "For every project with phase >= 3, find the FIRST contract whose type contains 'general contractor' (case-insensitive) and status != 'executed'; emit one alert (id alert-gc-<projectId>).",
+      "requiredInputs": [
+        "projects",
+        "contracts"
+      ],
+      "tenantScoping": "Scoped.",
+      "timeDependency": "createdAt only (non-semantic)",
+      "severity": "warning",
+      "sourceRecords": "projectId (contract id not emitted)",
+      "knownDefects": [
+        "Contract id is not emitted (traceability)"
+      ],
+      "expectedOutput": "One finding per phase>=3 project with an unexecuted GC contract; sources [project, contract]"
+    }
+  ]
+}
