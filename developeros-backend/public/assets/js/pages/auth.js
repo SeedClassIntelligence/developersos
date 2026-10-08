@@ -33,9 +33,13 @@
   }
 
   Pages.login = {
-    render(ctx) {
-      const notice = ctx.query.notice === 'invited'
-        ? html`<div class="form-notice" role="status">Invitation accepted. Sign in to continue.</div>` : '';
+    async render(ctx) {
+      const notices = {
+        invited: 'Invitation accepted. Sign in to continue.',
+        reset: 'Your password was updated. Sign in with the new password.',
+      };
+      const notice = notices[ctx.query.notice] ? html`<div class="form-notice" role="status">${notices[ctx.query.notice]}</div>` : '';
+      const options = await Api.get('/auth/options').catch(() => ({ passwordResetByEmail: false }));
       return frame(html`
         <form class="auth-card" data-form="login" data-testid="login-form" novalidate>
           <h1 class="auth-title">Sign in</h1>
@@ -44,6 +48,9 @@
           ${UI.field({ name: 'password', label: 'Password', type: 'password', required: true, autocomplete: 'current-password' })}
           <div class="form-error" data-role="form-error" role="alert" hidden></div>
           <button class="btn btn-navy auth-submit" type="submit">Sign in</button>
+          ${options.passwordResetByEmail
+            ? html`<a class="auth-foot" href="#/forgot-password" data-testid="forgot-link">Forgot your password?</a>`
+            : html`<div class="auth-foot">Forgot your password? Ask your organization's administrator for a reset link.</div>`}
           <div class="auth-foot">Access is by invitation from your organization's administrator.</div>
         </form>`);
     },

@@ -11,11 +11,14 @@
   // Public routes
   Router.add('/login', { name: 'login', page: Pages.login, public: true });
   Router.add('/accept-invite', { name: 'accept-invite', page: Pages.acceptInvite, public: true });
+  Router.add('/forgot-password', { name: 'forgot-password', page: Pages.forgotPassword, public: true });
+  Router.add('/reset-password', { name: 'reset-password', page: Pages.resetPassword, public: true });
   // Signed-in routes
   Router.add('/portfolio', { name: 'portfolio', page: Pages.portfolio });
   Router.add('/alerts', { name: 'alerts', page: Pages.alerts });
   Router.add('/team', { name: 'team', page: Pages.team });
   Router.add('/platform', { name: 'platform', page: Pages.platform });
+  Router.add('/audit', { name: 'audit', page: Pages.audit });
   // Development Intelligence (fixed paths before parameterised ones)
   Router.add('/intelligence/opportunities', { name: 'opportunities', page: Pages.opportunities, area: 'opportunities' });
   Router.add('/intelligence/opportunities/new', { name: 'opportunity-new', page: Pages.opportunityNew, area: 'opportunities' });

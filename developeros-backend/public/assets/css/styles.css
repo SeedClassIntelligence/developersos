@@ -455,3 +455,12 @@ textarea.input{resize:vertical;line-height:1.5}
 .finding-actions .grow{flex:1;min-width:200px}
 .finding-actions .form-error{flex-basis:100%}
 .field .lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:500}
+/* WP2 — access */
+.input-sm{padding:5px 8px;font-size:12px}
+.callout-green{border-left:3px solid var(--green)}
+.callout-red{border-left:3px solid var(--red)}
+.invite-result{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.copy-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.copy-value{background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:6px 8px;word-break:break-all;flex:1;min-width:240px}
+a.auth-foot{color:var(--mu);text-decoration:none}
+a.auth-foot:hover{color:var(--gold)}

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════
-// pages/collaboration.js — messages, documents, team, platform (live, read)
+// pages/collaboration.js — messages and documents (live, read)
 // ═══════════════════════════════════════════════
 
 (function (global) {
@@ -75,42 +75,4 @@
     },
   };
 
-  // ── Team ─────────────────────────────────────
-  Pages.team = {
-    title: () => 'Team',
-    async render() {
-      const team = await Api.get('/team');
-      return html`
-        <div class="page">
-          ${UI.pageHeader('Team', `${Session.organizationName()} — team directory`)}
-          ${UI.table([
-            { label: 'Name', cell: m => html`<span class="cell-strong">${m.name}</span>` },
-            { label: 'Role', cell: m => UI.badge(m.role || '—', 'gold') },
-            { label: 'Projects', cell: m => m.projects || '—', className: 'cell-dim' },
-            { label: 'Status', cell: m => UI.badge(UI.titleCase(m.status || 'active'), m.status === 'active' ? 'green' : 'navy') },
-            { label: 'Last active', cell: m => UI.dateTime(m.lastActive), className: 'mono' },
-          ], team, { empty: 'No team members recorded yet.' })}
-        </div>`;
-    },
-  };
-
-  // ── Platform administration ──────────────────
-  Pages.platform = {
-    title: () => 'Organizations',
-    async render() {
-      const [stats, orgs] = await Promise.all([Api.get('/admin/stats'), Api.get('/admin/orgs')]);
-      const entries = Object.entries(stats || {}).filter(([, v]) => typeof v === 'number');
-      return html`
-        <div class="page">
-          ${UI.pageHeader('Organizations', 'Platform administration')}
-          ${entries.length ? UI.stats(entries.slice(0, 4).map(([k, v]) => ({ value: UI.number(v), label: UI.titleCase(k.replace(/([A-Z])/g, ' $1')) }))) : ''}
-          ${UI.table([
-            { label: 'Organization', cell: o => html`<span class="cell-strong">${o.name}</span>` },
-            { label: 'Type', cell: o => o.type || '—' },
-            { label: 'Plan', cell: o => o.plan || '—' },
-            { label: 'Id', cell: o => o.id, className: 'mono' },
-          ], Array.isArray(orgs) ? orgs : [], { empty: 'No organizations.' })}
-        </div>`;
-    },
-  };
 })(window);

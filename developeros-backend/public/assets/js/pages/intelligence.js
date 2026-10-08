@@ -46,7 +46,7 @@
   const FINDING_STATE_KIND = { OPEN: 'red', ACKNOWLEDGED: 'amber', RESOLVED: 'green' };
 
   const oppStatus = s => OPP_STATUS[s] || { label: UI.titleCase(s), kind: 'navy' };
-  const who = id => (Session.user && id === Session.user.id ? 'you' : 'a team member');
+  const who = id => Store.memberName(id);
   const sourceLabel = v => (SOURCES.find(s => s.value === v) || { label: UI.titleCase(v || '') }).label;
   const requirementLabel = key => key === 'opportunity.property' ? 'Property linked'
     : key === 'opportunity.concept' ? 'Development concept described'
@@ -161,6 +161,7 @@
   Pages.opportunity = {
     title: () => 'Opportunity',
     async render(ctx) {
+      await Store.getMembers();
       const id = encodeURIComponent(ctx.params.id);
       const [opp, readiness, history, properties, relationships] = await Promise.all([
         Api.get(`/di/opportunities/${id}`), Api.get(`/di/opportunities/${id}/readiness`), Api.get(`/di/opportunities/${id}/history`),
@@ -331,6 +332,7 @@
   Pages.property = {
     title: () => 'Property',
     async render(ctx) {
+      await Store.getMembers();
       const id = encodeURIComponent(ctx.params.id);
       const [property, site, opps] = await Promise.all([
         Api.get(`/di/properties/${id}`), Api.get(`/di/properties/${id}/site-intelligence`), Api.get('/di/opportunities'),

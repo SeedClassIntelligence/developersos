@@ -71,7 +71,8 @@
           ${PROJECT_SECTIONS.map(s => link(projectPath(project.id, s.section), s.label, s.icon, (ctx.route.section || '') === s.section, `nav-${s.section || 'overview'}`))}` : ''}
         ${Session.can('team:read') ? html`
           <div class="sb-section">Organization</div>
-          ${link('/team', 'Team', '👥', page === 'team', 'nav-team')}` : ''}
+          ${link('/team', 'Team & access', '👥', page === 'team', 'nav-team')}
+          ${Session.can('audit:read') ? link('/audit', 'Audit trail', '⛓', page === 'audit', 'nav-audit') : ''}` : ''}
         ${Session.can('platform:admin:stats') ? html`
           <div class="sb-section">Platform administration</div>
           ${link('/platform', 'Organizations', '⚡', page === 'platform', 'nav-platform')}` : ''}

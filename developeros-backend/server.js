@@ -61,10 +61,20 @@ app.use(cors((req, cb) => {
 }));
 
 // ── RATE LIMITING ──────────────────────────────
-const authLimit = process.env.TEST_MODE === 'true' ? 1000 : 10;
-const apiLimit = process.env.TEST_MODE === 'true' ? 10000 : 100;
+// Behind a reverse proxy / TLS terminator, set TRUST_PROXY (e.g. 1 = one hop)
+// so limits apply per client address instead of to the proxy's address.
+if (process.env.TRUST_PROXY) {
+  const hops = Number(process.env.TRUST_PROXY);
+  app.set('trust proxy', Number.isInteger(hops) ? hops : process.env.TRUST_PROXY);
+}
+const testMode = process.env.TEST_MODE === 'true';
+const credentialLimit = testMode ? 1000 : Number(process.env.RATE_LIMIT_AUTH_MAX || 10);
+const apiLimit = testMode ? 10000 : Number(process.env.RATE_LIMIT_API_MAX || 1000);
 app.use('/api/', rateLimit({ windowMs: 15*60*1000, max: apiLimit, message: { error: 'Too many requests' } }));
-app.use('/api/auth/', rateLimit({ windowMs: 15*60*1000, max: authLimit, message: { error: 'Too many login attempts. Try again in 15 minutes.' } }));
+// The strict limit guards credential endpoints only; session reads (/api/auth/me,
+// /context, /memberships) run on every page load and fall under the API limit.
+const credentialLimiter = rateLimit({ windowMs: 15*60*1000, max: credentialLimit, message: { error: 'Too many attempts. Try again in 15 minutes.' } });
+app.use(['/api/auth/login', '/api/auth/register', '/api/auth/password-reset', '/api/auth/change-password', '/api/invitations/accept'], credentialLimiter);
 
 // ── LOGGING ────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -102,6 +112,7 @@ app.use('/api/documents', protect, resolveOrganizationContext, require('./routes
 app.use('/api/alerts',    protect, resolveOrganizationContext, require('./routes/alerts'));
 app.use('/api/team',      protect, resolveOrganizationContext, require('./routes/team'));
 app.use('/api/partners',  protect, resolveOrganizationContext, require('./routes/partners'));
+app.use('/api/members',   protect, resolveOrganizationContext, require('./routes/members'));
 app.use('/api/audit',     protect, resolveOrganizationContext, require('./routes/audit'));
 app.use('/api/di',        protect, resolveOrganizationContext, require('./routes/di'));
 app.use('/api/admin',     protect, resolveOrganizationContext, adminOnly, require('./routes/admin'));
