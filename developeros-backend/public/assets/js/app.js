@@ -16,6 +16,15 @@
   Router.add('/alerts', { name: 'alerts', page: Pages.alerts });
   Router.add('/team', { name: 'team', page: Pages.team });
   Router.add('/platform', { name: 'platform', page: Pages.platform });
+  // Development Intelligence (fixed paths before parameterised ones)
+  Router.add('/intelligence/opportunities', { name: 'opportunities', page: Pages.opportunities, area: 'opportunities' });
+  Router.add('/intelligence/opportunities/new', { name: 'opportunity-new', page: Pages.opportunityNew, area: 'opportunities' });
+  Router.add('/intelligence/opportunities/:id', { name: 'opportunity', page: Pages.opportunity, area: 'opportunities' });
+  Router.add('/intelligence/properties', { name: 'properties', page: Pages.properties, area: 'properties' });
+  Router.add('/intelligence/properties/new', { name: 'property-new', page: Pages.propertyNew, area: 'properties' });
+  Router.add('/intelligence/properties/:id', { name: 'property', page: Pages.property, area: 'properties' });
+  Router.add('/intelligence/relationships', { name: 'relationships', page: Pages.relationships, area: 'relationships' });
+  Router.add('/intelligence/findings', { name: 'findings', page: Pages.findings, area: 'findings' });
   Router.add('/projects/:projectId', { name: 'project', page: Pages.project, project: true, section: '' });
   for (const section of ['tasks', 'permits', 'contracts', 'capital', 'messages', 'documents']) {
     Router.add(`/projects/:projectId/${section}`, { name: section, page: Pages[section], project: true, section });
@@ -29,6 +38,7 @@
   async function render() {
     const seq = ++renderSeq;
     const { path, query } = Router.current();
+    const routeKey = location.hash.replace(/^#/, '') || '/';
 
     // Restore a stored session once per page load before routing.
     if (!restored) {
@@ -60,7 +70,7 @@
 
     showShell(true);
     const main = document.getElementById('app');
-    // data-ready names the route whose content (or error) is currently shown.
+    // data-ready names the route (path and query) whose content or error is shown.
     main.dataset.ready = '';
     main.setAttribute('aria-busy', 'true');
     mount(main, UI.loading());
@@ -73,7 +83,7 @@
       const view = await route.page.render(ctx);
       if (seq !== renderSeq) return; // a newer navigation won
       mount(main, view);
-      main.dataset.ready = path;
+      main.dataset.ready = routeKey;
       main.removeAttribute('aria-busy');
       document.title = `${route.page.title ? route.page.title(ctx) + ' · ' : ''}DeveloperOS`;
       main.scrollTop = 0;
@@ -83,7 +93,7 @@
       if (!Session.signedIn) return; // session ended mid-render; the 401 handler routes to login
       await Shell.render(ctx).catch(() => {});
       mount(main, UI.error(err));
-      main.dataset.ready = path;
+      main.dataset.ready = routeKey;
       main.removeAttribute('aria-busy');
     }
   }

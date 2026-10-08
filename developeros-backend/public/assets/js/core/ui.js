@@ -107,6 +107,48 @@
         </label>`;
     },
 
+    select({ name, label, options, value = '', required = false, testid }) {
+      return html`
+        <label class="field">
+          <span class="lbl">${label}</span>
+          <select class="input" name="${name}" ${required ? raw('required') : ''} ${testid ? html`data-testid="${testid}"` : ''}>
+            ${options.map(o => html`<option value="${o.value}" ${String(o.value) === String(value ?? '') ? raw('selected') : ''}>${o.label}</option>`)}
+          </select>
+        </label>`;
+    },
+
+    textarea({ name, label, value = '', required = false, rows = 3, placeholder }) {
+      return html`
+        <label class="field">
+          <span class="lbl">${label}</span>
+          <textarea class="input" name="${name}" rows="${rows}" ${required ? raw('required') : ''} ${placeholder ? html`placeholder="${placeholder}"` : ''}>${value}</textarea>
+        </label>`;
+    },
+
+    formError() {
+      return html`<div class="form-error" data-role="form-error" role="alert" hidden></div>`;
+    },
+
+    // Runs a form submission: disables the submit button, shows API errors
+    // in the form's error slot, and returns the result (undefined on failure).
+    async submit(form, fn, { missingLabel = k => k } = {}) {
+      const button = form.querySelector('button[type="submit"]');
+      const box = form.querySelector('[data-role="form-error"]');
+      const show = message => { if (box) { box.textContent = message || ''; box.hidden = !message; } };
+      show('');
+      if (button) button.disabled = true;
+      try {
+        return await fn();
+      } catch (err) {
+        const missing = err.body && Array.isArray(err.body.missing) && err.body.missing.length
+          ? ` Missing: ${err.body.missing.map(missingLabel).join(', ')}.` : '';
+        show(`${err.message.replace(/[.\s]*$/, '')}.${missing}`);
+        return undefined;
+      } finally {
+        if (button) button.disabled = false;
+      }
+    },
+
     // ── feedback ───────────────────────────────
     toast(message, kind = 'info') {
       const root = document.getElementById('toast-root');
@@ -116,6 +158,7 @@
       el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
       el.textContent = message;
       root.appendChild(el);
+      while (root.children.length > 3) root.firstElementChild.remove();
       setTimeout(() => el.remove(), 5000);
     },
   };

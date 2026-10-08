@@ -60,6 +60,12 @@
         <div class="sb-section">Platform</div>
         ${link('/portfolio', 'Portfolio', '⬡', page === 'portfolio', 'nav-portfolio')}
         ${link('/alerts', 'Risk Alerts', '⚠️', page === 'alerts', 'nav-alerts')}
+        ${Session.can('opportunities:read') ? html`
+          <div class="sb-section">Development Intelligence</div>
+          ${link('/intelligence/opportunities', 'Pipeline', '◎', ctx.route.area === 'opportunities', 'nav-pipeline')}
+          ${Session.can('properties:read') ? link('/intelligence/properties', 'Properties', '▦', ctx.route.area === 'properties', 'nav-properties') : ''}
+          ${Session.can('relationships:read') ? link('/intelligence/relationships', 'Relationships', '⇄', ctx.route.area === 'relationships', 'nav-relationships') : ''}
+          ${Session.can('findings:read') ? link('/intelligence/findings', 'Findings', '◆', ctx.route.area === 'findings', 'nav-findings') : ''}` : ''}
         ${project ? html`
           <div class="sb-section sb-project" title="${project.name}">${project.name}</div>
           ${PROJECT_SECTIONS.map(s => link(projectPath(project.id, s.section), s.label, s.icon, (ctx.route.section || '') === s.section, `nav-${s.section || 'overview'}`))}` : ''}

@@ -7,7 +7,7 @@ This is the single source of truth for product status. It is updated at every wo
 **Last updated:** 2026-10-08
 **Baseline:** `main` @ `ca69d64` + [PR #2](https://github.com/SeedClassIntelligence/developersos/pull/2) (DI-1 + DI1-D1, green, awaiting merge)
 **Working line:** `claude/nice-fermat-5jwzsr`
-**Regression gate:** 263/263 GREEN (245 accepted backend + 18 UI browser tests), DI-2 locked at baseline
+**Regression gate:** 278/278 GREEN (245 accepted backend + 33 UI browser tests: 18 WP1, 15 WP3), DI-2 locked at baseline
 
 ## Finished (accepted, tested, backend only unless stated)
 - **EF-1:** PostgreSQL persistence and migrations
@@ -27,9 +27,21 @@ This is the single source of truth for product status. It is updated at every wo
     - Same-origin requests were refused by CORS unless `FRONTEND_URL` listed the serving host.
     - Overdue capital deadlines were reported as "expires in -573 days".
 
+- **WP3 Development Intelligence screens (2026-10-08):**
+  - Workflow stages 1–4 are operable end to end in the application:
+    - **Relationships:** create, with provenance; activate/deactivate.
+    - **Properties:** create and edit, with address, APN and provenance.
+    - **Opportunities:** create from the pipeline or from a property; edit; lifecycle transitions with a required reason and a history timeline.
+    - **Site intelligence:** an editor for all 22 facts with KNOWN/UNKNOWN/NOT_APPLICABLE status, typed numeric values and provenance, plus version history.
+    - **Gate 0 readiness panel**, with a server-refused move to READY that shows the missing items by name.
+    - **Findings:** evaluate, acknowledge, resolve with a note, and filter by state.
+  - Viewers get read-only screens.
+  - Runs on the frozen DI-1 API with no backend change.
+  - Proven by 15 browser tests (gate 12), cross-checked against the API.
+
 ## Underway
 - **WP9 Production readiness:** the provider-neutral part (container image, compose stack, production start sequence, runbook).
-- **WP3 Development Intelligence screens:** next on the critical path.
+- **WP4 Qualification (DI-2):** next on the critical path. It is implementation work against the existing 52-test contract, and starts once the four open points in assessment §8.1 are confirmed (or the recommended defaults are accepted).
 
 ## Blocked / awaiting founder
 | Item | Waiting on |
@@ -45,7 +57,7 @@ This is the single source of truth for product status. It is updated at every wo
 | WP | Package | Status | User-operable? |
 |---|---|---|---|
 | WP1 | Frontend foundation (real auth, remove mock data/credentials) | **Done** | Yes: sign-in, org switch, live read views |
-| WP3 | Development Intelligence screens | **Next** | — |
+| WP3 | Development Intelligence screens | **Done** | Yes: stages 1–4 in the UI |
 | WP4 | Qualification (DI-2) + screens | Queued; needs §8.1 | — |
 | WP5 | Underwriting V1 | Queued; needs §8.2 | — |
 | WP6 | Governed Decision & Project Authorization | Queued; needs §8.3 | — |
@@ -58,13 +70,16 @@ This is the single source of truth for product status. It is updated at every wo
 ## Workflow operability (target: all ✓ for V1)
 | Stage | Backend | UI |
 |---|---|---|
-| Relationship sourcing | ✓ | ✗ |
-| Property | ✓ | ✗ |
-| Opportunity | ✓ | ✗ |
-| Site Intelligence | ✓ | ✗ |
+| Relationship sourcing | ✓ | ✓ |
+| Property | ✓ | ✓ |
+| Opportunity | ✓ | ✓ |
+| Site Intelligence | ✓ | ✓ (with readiness and findings) |
 | Qualification | spec only | ✗ |
 | Underwriting | ✗ | ✗ |
 | Governed Decision | ✗ | ✗ |
 | Project Authorization | ✗ | ✗ |
 | Execution | ✓ | live read views (edits arrive in WP7) |
 | Portfolio Monitoring | partial | live portfolio + risk alerts (rollups in WP8) |
+
+## Deferred cosmetic items (frozen code; fix at next authorized DI-1 change)
+- The DI-1 findings engine's explanation text for an overdue capital deadline reads "-573 days from …". The title is correct ("deadline passed 573 days ago").

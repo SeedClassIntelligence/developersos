@@ -116,8 +116,7 @@ async function runUIAcceptanceSuite() {
     // Navigates to a signed-in route and waits until the router has rendered it (content or error).
     async function open(page, route) {
       await page.goto(`${BASE}/#${route}`);
-      const pathOnly = route.split('?')[0];
-      await page.waitForFunction(p => document.getElementById('app').dataset.ready === p, pathOnly);
+      await page.waitForFunction(r => document.getElementById('app').dataset.ready === r, route);
     }
     const adminToken = (await loginAs(ADMIN.email)).token;
     const apiCount = async p => (await apiRequest('GET', p, { headers: { Authorization: `Bearer ${adminToken}` } })).body.length;
