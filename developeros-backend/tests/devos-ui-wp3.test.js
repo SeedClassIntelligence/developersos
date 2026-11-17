@@ -60,7 +60,7 @@ async function runUIWP3Suite() {
 
   let browser;
   try {
-    browser = await require('playwright').chromium.launch();
+    browser = await require('./browser').launchChromium();
   } catch (err) {
     results.push({ id: 'DEVOS-UI3-BROWSER', title: 'Headless Chromium available', passed: false, detail: err.message.split('\n')[0] });
     console.log(`  [FAIL] DEVOS-UI3-BROWSER — ${err.message.split('\n')[0]}`);

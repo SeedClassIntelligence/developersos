@@ -27,10 +27,11 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 # Application files stay root-owned and read-only for the service user;
-# only logs/ (morgan access log in production) is writable.
+# only logs/ (morgan access log) and data/documents (document storage,
+# mounted as a volume) are writable.
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN mkdir -p /app/logs && chown node:node /app/logs
+RUN mkdir -p /app/logs /app/data/documents && chown node:node /app/logs /app/data/documents
 
 USER node
 EXPOSE 3000

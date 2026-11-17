@@ -72,6 +72,7 @@
         ${Session.can('team:read') ? html`
           <div class="sb-section">Organization</div>
           ${link('/team', 'Team & access', '👥', page === 'team', 'nav-team')}
+          ${Session.can('projects:read') ? link('/partners', 'Partners', '🤝', page === 'partners', 'nav-partners') : ''}
           ${Session.can('audit:read') ? link('/audit', 'Audit trail', '⛓', page === 'audit', 'nav-audit') : ''}` : ''}
         ${Session.can('platform:admin:stats') ? html`
           <div class="sb-section">Platform administration</div>

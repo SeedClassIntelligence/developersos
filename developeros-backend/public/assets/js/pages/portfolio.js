@@ -96,10 +96,13 @@
       ]);
       const st = status(p.status);
       const count = (list, key, value) => list.filter(x => x[key] === value).length;
+      const canEdit = Session.can('projects:update');
+      if (canEdit && ctx.query.edit === '1') return projectEditor(p);
 
       return html`
         <div class="proj-topbar">
-          <h1 class="proj-title">${p.name}</h1>
+          <div class="proj-title-row"><h1 class="proj-title">${p.name}</h1>
+            ${canEdit ? html`<a class="btn btn-o btn-sm" href="#${Shell.projectPath(p.id)}?edit=1" data-testid="edit-project">Edit project</a>` : ''}</div>
           <div class="proj-meta">
             ${p.type ? UI.badge(p.type, 'gold') : ''}
             ${UI.badge(st.label, st.kind)}
@@ -142,6 +145,55 @@
         </div>`;
     },
   };
+
+  function projectEditor(p) {
+    const opt = (list, value) => list.map(([v, l]) => html`<option value="${v}" ${String(v) === String(value) ? raw('selected') : ''}>${l}</option>`);
+    return html`
+      <div class="page page-narrow">
+        ${UI.pageHeader(`Edit ${p.name}`, 'Project profile, phase and reported status')}
+        <form class="card form-card" data-form="project-save" data-id="${p.id}" data-testid="project-form" novalidate>
+          ${UI.field({ name: 'name', label: 'Project name', value: p.name, required: true })}
+          <div class="form-grid">
+            ${UI.field({ name: 'type', label: 'Type', value: p.type || '' })}
+            ${UI.field({ name: 'program', label: 'Program', value: p.program || '' })}
+            ${UI.field({ name: 'city', label: 'City', value: p.city || '' })}
+          </div>
+          <div class="form-grid">
+            ${UI.field({ name: 'units', label: 'Units', value: String(p.units ?? '') })}
+            ${UI.field({ name: 'affordableUnits', label: 'Affordable units', value: String(p.affordableUnits ?? '') })}
+            ${UI.field({ name: 'budget', label: 'Budget ($)', value: String(p.budget ?? '') })}
+          </div>
+          <div class="form-grid">
+            <label class="field"><span class="lbl">Phase</span><select class="input" name="phase">${opt(PHASES.map((ph, i) => [i + 1, ph]), p.phase)}</select></label>
+            <label class="field"><span class="lbl">Status</span><select class="input" name="status">${opt(Object.entries(STATUS).map(([k, v]) => [k, v.label]), p.status)}</select></label>
+            ${UI.field({ name: 'progress', label: 'Reported progress (%)', value: String(p.progress ?? 0) })}
+          </div>
+          ${UI.formError()}
+          <div class="form-actions">
+            <button class="btn btn-navy btn-sm" type="submit">Save project</button>
+            <a class="btn btn-o btn-sm" href="#${Shell.projectPath(p.id)}">Cancel</a>
+          </div>
+        </form>
+      </div>`;
+  }
+
+  Actions.onSubmit('project-save', async form => {
+    const int = n => (form[n].value.trim() === '' ? undefined : Number(form[n].value.replace(/[$,\s]/g, '')));
+    const phase = Number(form.phase.value);
+    const body = {
+      name: form.name.value.trim(), type: form.type.value.trim(), program: form.program.value.trim(), city: form.city.value.trim(),
+      units: int('units'), affordableUnits: int('affordableUnits'), budget: int('budget'), progress: int('progress'),
+      phase, phaseLabel: PHASES[phase - 1], status: form.status.value,
+    };
+    const saved = await UI.submit(form, () => {
+      if (!body.name) throw new Error('Project name is required.');
+      return Api.put(`/projects/${encodeURIComponent(form.dataset.id)}`, body);
+    });
+    if (!saved) return;
+    Store.projects = null;
+    UI.toast('Project saved', 'success');
+    Router.go(Shell.projectPath(form.dataset.id));
+  });
 
   // ── Risk alerts (all projects) ───────────────
   Pages.alerts = {

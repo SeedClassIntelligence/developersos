@@ -23,7 +23,8 @@
     "build": "npm run check",
     "test:gate": "npm run check && node tests/runner.js all",
     "test:ui": "node tests/runner.js ui",
-    "test:access": "node tests/runner.js access"
+    "test:access": "node tests/runner.js access",
+    "test:exec": "node tests/runner.js exec"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

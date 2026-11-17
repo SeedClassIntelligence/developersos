@@ -44,7 +44,7 @@ async function getMessages(channelId) {
 }
 
 async function createChannel(data) {
-  const id = data.id || ('ch' + uuidv4().replace(/-/g, ''));
+  const id = 'ch' + uuidv4().replace(/-/g, '');
   const { rows } = await query(`
     INSERT INTO channels (id, project_id, name, description, unread, created_at)
     VALUES ($1, $2, $3, $4, 0, NOW())
@@ -60,21 +60,24 @@ async function createChannel(data) {
   };
 }
 
+// Stable avatar color per member (display only).
+const SENDER_COLORS = ['#1A2332', '#2A7A6A', '#3A6A9A', '#C4973A', '#A84A3A', '#5A4A8A', '#3A7A4A'];
+function colorFor(userId) {
+  let h = 0;
+  for (const ch of String(userId)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return SENDER_COLORS[h % SENDER_COLORS.length];
+}
+
+// data: { text, sender: { userId, name, roleName } } — sender is the authenticated member.
 async function sendMessage(channelId, data) {
-  const id = data.id || ('m' + uuidv4().replace(/-/g, ''));
+  const id = 'm' + uuidv4().replace(/-/g, '');
+  const name = data.sender.name || 'Member';
+  const initials = name.trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase().slice(0, 4);
   const { rows } = await query(`
-    INSERT INTO messages (id, channel_id, sender_name, sender_initials, sender_color, role, text, timestamp)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+    INSERT INTO messages (id, channel_id, sender_name, sender_initials, sender_color, role, text, sender_user_id, timestamp)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
     RETURNING *
-  `, [
-    id,
-    channelId,
-    data.senderName || 'User',
-    data.senderInitials || '',
-    data.senderColor || '#1A2332',
-    data.role || 'developer',
-    data.text,
-  ]);
+  `, [id, channelId, name, initials, colorFor(data.sender.userId), data.sender.roleName || null, data.text, data.sender.userId]);
 
   return {
     id: rows[0].id,
@@ -84,7 +87,7 @@ async function sendMessage(channelId, data) {
     senderColor: rows[0].sender_color,
     role: rows[0].role,
     text: rows[0].text,
-    timestamp: rows[0].timestamp instanceof Date ? rows[0].timestamp.toISOString() : rows[0].timestamp,
+    timestamp: rows[0].timestamp,
   };
 }
 

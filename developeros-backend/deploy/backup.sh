@@ -6,8 +6,15 @@
 # Produces, from ONE consistent snapshot:
 #   developeros-<UTC timestamp>.dump        pg_dump custom format (-Fc)
 #   developeros-<UTC timestamp>.counts.tsv  exact row count of every table in that snapshot
-#   developeros-<UTC timestamp>.sha256      checksums of both files
-# deploy/restore-drill.sh restores the dump and checks it against the counts.
+#   developeros-<UTC timestamp>.documents.tar  uploaded project documents (stored files)
+#   developeros-<UTC timestamp>.sha256      checksums of all files
+# deploy/restore-drill.sh restores the dump, checks it against the counts, and
+# verifies every stored document the database references against the archive.
+#
+# Documents: the compose app container's /app/data/documents volume, or with
+# BACKUP_DATABASE_URL the directory named by BACKUP_DOCUMENTS_DIR. The archive
+# is taken right after the database snapshot; a document deleted in between is
+# reported by the restore drill.
 #
 # Source database (choose one):
 #   default            the compose stack's db container (docker compose exec);
@@ -76,6 +83,22 @@ snapshot=$(read_until_end)
 printf '%s\n' "$COUNTS_SQL" "SELECT '__END__';" >&"$to_psql"
 read_until_end | LC_ALL=C sort > "$base.counts.tsv.part"
 
+# Stored document files, taken while the snapshot is held.
+docs_note="none"
+if [ -n "${BACKUP_DATABASE_URL:-}" ]; then
+  if [ -n "${BACKUP_DOCUMENTS_DIR:-}" ]; then
+    tar -C "$(dirname "$BACKUP_DOCUMENTS_DIR")" -cf "$base.documents.tar.part" "$(basename "$BACKUP_DOCUMENTS_DIR")"
+    docs_note="$BACKUP_DOCUMENTS_DIR"
+  else
+    echo "[BACKUP] WARNING: BACKUP_DOCUMENTS_DIR not set — stored documents are NOT in this backup" >&2
+  fi
+elif "${DC[@]}" ps --status running --services 2>/dev/null | grep -qx app; then
+  "${DC[@]}" exec -T app tar -C /app/data -cf - documents > "$base.documents.tar.part"
+  docs_note="compose service app, /app/data/documents"
+else
+  echo "[BACKUP] WARNING: app service not running — stored documents are NOT in this backup" >&2
+fi
+
 "${PGDUMP[@]}" -Fc --snapshot="$snapshot" > "$base.dump.part"
 
 printf '%s\n' "COMMIT;" "\\q" >&"$to_psql"
@@ -84,7 +107,12 @@ wait "$SNAP_PID" 2>/dev/null || true
 
 mv "$base.counts.tsv.part" "$base.counts.tsv"
 mv "$base.dump.part" "$base.dump"
-( cd "$OUT_DIR" && sha256sum "$(basename "$base.dump")" "$(basename "$base.counts.tsv")" > "$(basename "$base.sha256")" )
+files=("$(basename "$base.dump")" "$(basename "$base.counts.tsv")")
+if [ -f "$base.documents.tar.part" ]; then
+  mv "$base.documents.tar.part" "$base.documents.tar"
+  files+=("$(basename "$base.documents.tar")")
+fi
+( cd "$OUT_DIR" && sha256sum "${files[@]}" > "$(basename "$base.sha256")" )
 
 tables=$(wc -l < "$base.counts.tsv" | tr -d ' ')
 rows=$(awk -F'\t' '{s+=$2} END {print s+0}' "$base.counts.tsv")
@@ -92,5 +120,8 @@ echo "[BACKUP] source:   $SOURCE"
 echo "[BACKUP] snapshot: $snapshot"
 echo "[BACKUP] dump:     $base.dump ($(du -h "$base.dump" | cut -f1))"
 echo "[BACKUP] counts:   $base.counts.tsv ($tables tables, $rows rows)"
+if [ -f "$base.documents.tar" ]; then
+  echo "[BACKUP] documents: $base.documents.tar ($(tar -tf "$base.documents.tar" | grep -vc '/$') files, from $docs_note)"
+fi
 echo "[BACKUP] sha256:   $base.sha256"
 echo "[BACKUP] Reminder: AUDIT_SIGNING_KEY is not in the dump; keep the matching key backup with it."

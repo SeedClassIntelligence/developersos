@@ -31,3 +31,6 @@ Thumbs.db
 # Archives & Scratch
 *.zip
 scratch/
+
+# Local document storage (development/test uploads)
+data/

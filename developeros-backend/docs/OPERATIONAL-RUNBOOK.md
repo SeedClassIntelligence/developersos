@@ -138,16 +138,21 @@ Bare host: `systemctl start developeros-migrate && systemctl restart developeros
 
 ## 8. Backup
 ```bash
-deploy/backup.sh                          # -> deploy/backups/developeros-<UTC>.dump/.counts.tsv/.sha256
-BACKUP_DATABASE_URL=postgresql://owner:pw@host:5432/developeros deploy/backup.sh /srv/backups   # external DB, pg_dump 18 client
+deploy/backup.sh                          # -> deploy/backups/developeros-<UTC>.dump/.counts.tsv/.documents.tar/.sha256
+BACKUP_DATABASE_URL=postgresql://owner:pw@host:5432/developeros \
+  BACKUP_DOCUMENTS_DIR=/srv/developeros/documents deploy/backup.sh /srv/backups   # external DB, pg_dump 18 client
 ```
+- **Uploaded documents** (the compose `documents` volume, `/app/data/documents`) are
+  archived into `.documents.tar` right after the database snapshot is taken. A backup
+  without it is incomplete: the restore drill fails when the database references stored
+  files that the archive does not contain.
 - `pg_dump -Fc` of the application database, taken from one exported snapshot; the
   `.counts.tsv` holds the exact row count of every table **in that same snapshot**, so
   the restore drill can check completeness exactly even while the app is writing.
 - Default mode runs `pg_dump`/`psql` inside the `db` container (version always matches
   the server); no password leaves the container.
-- Schedule it (cron/systemd timer), copy the three files off the host (object storage
-  with retention / WORM), and alert on non-zero exit.
+- Schedule it (cron/systemd timer), copy all files of the backup off the host (object
+  storage with retention / WORM), and alert on non-zero exit or a WARNING line.
 
 **Audit ledger and `AUDIT_SIGNING_KEY` are backed up together.** The ledger
 (`audit_events`, `audit_chain_heads`, `audit_checkpoints`) is in the dump; the signing
@@ -171,7 +176,9 @@ The drill never touches production: it starts a throwaway `POSTGRES_IMAGE` conta
 every table's row count with the backup's `.counts.tsv`, then runs
 `scripts/verify-database.js` from the app image **as the runtime role** against the
 restored copy: runtime-role guard, `schema_migrations` complete, runtime reads, and full
-audit-ledger verification with the env file's `AUDIT_SIGNING_KEY`. It prints
+audit-ledger verification with the env file's `AUDIT_SIGNING_KEY`. It also checks every
+stored document the restored database references against `.documents.tar`: present, and
+SHA-256 equal to the hash recorded at upload. It prints
 `[DRILL] PASSED` and exits 0 only if everything passed, and removes the container.
 Run it after every schedule change and at least monthly; keep the output as evidence.
 
@@ -181,6 +188,9 @@ $DC stop app
 $DC exec -T db dropdb -U devos_owner --force developeros
 $DC exec -T db createdb -U devos_owner developeros
 $DC exec -T db pg_restore --exit-on-error -U devos_owner -d developeros < deploy/backups/<file>.dump
+# stored documents: replace the volume's contents with the archive from the same backup
+$DC run --rm --no-deps -T --entrypoint sh app -c 'find /app/data/documents -mindepth 1 -delete && tar -C /app/data -xf -' \
+  < deploy/backups/<file>.documents.tar
 $DC up -d --wait                          # migrate re-applies runtime grants; app starts
 ```
 The runtime role is cluster-global and survives `dropdb`; on a new cluster the
