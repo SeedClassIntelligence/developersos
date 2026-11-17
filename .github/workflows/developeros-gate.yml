@@ -30,7 +30,9 @@ concurrency:
 jobs:
   gate:
     name: Clean-database gate (PostgreSQL 18)
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.56.1 (locked) supports Ubuntu 24.04; ubuntu-latest moved
+    # to 26.04, where its Chromium install fails. Move both together when upgrading.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     services:
