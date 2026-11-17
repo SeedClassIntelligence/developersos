@@ -18,6 +18,7 @@ const { runDI2AcceptanceSuite } = require('./devos-di2-acceptance.test');
 const { runUIAcceptanceSuite } = require('./devos-ui-wp1.test');
 const { runUIWP3Suite } = require('./devos-ui-wp3.test');
 const { runAccessSuite } = require('./devos-ui-wp2.test');
+const { runExecutionSuite } = require('./devos-wp7-execution.test');
 const DI2_BASELINE = require('./fixtures/di2-red-baseline.json');
 const DI1_BASELINE = require('./fixtures/di1-red-baseline.json');
 
@@ -63,6 +64,7 @@ async function main() {
   let uiRes = null;
   let ui3Res = null;
   let accRes = null;
+  let execRes = null;
 
   try {
     // Must run first: it is the first caller of ensureTestDatabase() in the
@@ -110,6 +112,9 @@ async function main() {
     }
     if (target === 'access' || target === 'ui' || target === 'all') {
       accRes = await runAccessSuite();
+    }
+    if (target === 'exec' || target === 'ui' || target === 'all') {
+      execRes = await runExecutionSuite();
     }
   } finally {
     await stopTestServer();
@@ -193,6 +198,10 @@ async function main() {
     const statusLabel = accRes.failedCount === 0 ? '[GREEN — API + BROWSER VERIFIED]' : `[${accRes.failedCount} FAILED]`;
     console.log(`  13. DEVOS-ACCESS (WP2)     : ${accRes.passedCount}/${accRes.total} PASSED  ${statusLabel}`);
   }
+  if (execRes) {
+    const statusLabel = execRes.failedCount === 0 ? '[GREEN — API + BROWSER VERIFIED]' : `[${execRes.failedCount} FAILED]`;
+    console.log(`  14. DEVOS-EXEC (WP7)       : ${execRes.passedCount}/${execRes.total} PASSED  ${statusLabel}`);
+  }
   console.log('===============================================================\n');
   const failed =
     (cleanDbRes && cleanDbRes.failedCount > 0) ||
@@ -208,7 +217,8 @@ async function main() {
     (di2Res && di2Res.baseline.mismatches > 0) ||
     (uiRes && uiRes.failedCount > 0) ||
     (ui3Res && ui3Res.failedCount > 0) ||
-    (accRes && accRes.failedCount > 0);
+    (accRes && accRes.failedCount > 0) ||
+    (execRes && execRes.failedCount > 0);
   process.exit(failed ? 1 : 0);
 }
 

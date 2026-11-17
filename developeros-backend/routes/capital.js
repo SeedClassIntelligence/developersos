@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const capitalRepo = require('../db/repositories/capital.repo');
 const { requirePermission, authorizeResource } = require('../middleware/auth');
+const v = require('../middleware/execution-validation');
 
 // GET all capital stacks
 router.get('/', requirePermission('capital:read'), async (req, res, next) => {
@@ -30,7 +31,7 @@ router.get('/:projectId', requirePermission('capital:read'), authorizeResource('
 });
 
 // PUT capital stack for project
-router.put('/:projectId', requirePermission('capital:update'), authorizeResource('project', req => req.params.projectId), async (req, res, next) => {
+router.put('/:projectId', requirePermission('capital:update'), authorizeResource('project', req => req.params.projectId), v.validateCapital, async (req, res, next) => {
   try {
     const stack = await capitalRepo.save(req.params.projectId, req.body);
     res.json(stack);

@@ -54,7 +54,7 @@ async function runUIAcceptanceSuite() {
       const out = await fn();
       passed = out === true || (out && out.pass === true);
       detail = out && out.detail !== undefined ? (typeof out.detail === 'string' ? out.detail : JSON.stringify(out.detail)) : '';
-    } catch (err) { detail = `error: ${err.message.split('\n')[0]}`; }
+    } catch (err) { detail = `error: ${process.env.DEVOS_TEST_VERBOSE ? err.message.replace(/\s+/g, ' ') : err.message.split('\n')[0]}`; }
     results.push({ id, title, passed, detail: detail.slice(0, 600) });
     console.log(`  ${passed ? '[PASS]' : '[FAIL]'} ${id} — ${title}${passed ? '' : ` :: ${detail.slice(0, 300)}`}`);
   }
@@ -88,8 +88,7 @@ async function runUIAcceptanceSuite() {
 
   let browser = null;
   try {
-    const { chromium } = require('playwright');
-    browser = await chromium.launch();
+    browser = await require('./browser').launchChromium();
   } catch (err) {
     results.push({ id: 'DEVOS-UI-BROWSER', title: 'Headless Chromium available for UI tests', passed: false, detail: err.message.split('\n')[0] });
     console.log(`  [FAIL] DEVOS-UI-BROWSER — Chromium could not be launched: ${err.message.split('\n')[0]}`);
@@ -282,6 +281,20 @@ async function runUIAcceptanceSuite() {
         await p3.context().close();
         return { pass: /do not match/i.test(mismatch) && /Read-Only Viewer/.test(role) && org === 'KG Development' && /no longer active|invalid/i.test(reuse),
           detail: { mismatch, role, org, reuse } };
+      });
+
+      await t('DEVOS-UI-UX-002', 'A slower earlier page never overwrites the page navigated to last (sign-in screen vs invitation link)', async () => {
+        const p5 = await newPage();
+        // Make the sign-in screen slow to render, then navigate onward before it finishes.
+        await p5.route('**/api/auth/options', async route => { await new Promise(r => setTimeout(r, 1500)); await route.continue(); });
+        await p5.goto(`${BASE}/#/login`);
+        await p5.goto(`${BASE}/#/accept-invite?token=race-check`);
+        await p5.waitForSelector('[data-testid=accept-form]');
+        await p5.waitForTimeout(2500); // the delayed sign-in render completes during this wait
+        const acceptStillShown = await p5.locator('[data-testid=accept-form]').count();
+        const loginShown = await p5.locator('[data-testid=login-form]').count();
+        await p5.context().close();
+        return { pass: acceptStillShown === 1 && loginShown === 0, detail: { acceptStillShown, loginShown } };
       });
 
       await t('DEVOS-UI-AUTH-007', 'A session that ends server-side (user deactivated) returns the user to sign-in with a notice', async () => {

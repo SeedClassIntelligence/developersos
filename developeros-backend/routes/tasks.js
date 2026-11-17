@@ -8,6 +8,7 @@ const router = express.Router();
 const tasksRepo = require('../db/repositories/tasks.repo');
 const { requirePermission, authorizeResource, authorizeProjectParent } = require('../middleware/auth');
 const { authorizeExecutionReferences } = require('../middleware/references');
+const v = require('../middleware/execution-validation');
 
 // GET tasks (optionally filter by projectId, status, discipline)
 router.get('/', requirePermission('tasks:read'), async (req, res, next) => {
@@ -36,22 +37,24 @@ router.get('/:id', requirePermission('tasks:read'), authorizeResource('task'), a
 });
 
 // CREATE task
-router.post('/', requirePermission('tasks:create'), authorizeProjectParent, authorizeExecutionReferences(), async (req, res, next) => {
+router.post('/', requirePermission('tasks:create'), authorizeProjectParent, authorizeExecutionReferences(), v.validateTask({ create: true }), async (req, res, next) => {
   try {
     const t = await tasksRepo.create(req.body);
     res.status(201).json(t);
   } catch (err) {
+    if (err.code === '23514') return res.status(400).json({ error: 'task dependencies must stay within one project' });
     next(err);
   }
 });
 
 // UPDATE task
-router.put('/:id', requirePermission('tasks:update'), authorizeResource('task'), authorizeExecutionReferences({ taskProjectFromRow: true }), async (req, res, next) => {
+router.put('/:id', requirePermission('tasks:update'), authorizeResource('task'), authorizeExecutionReferences({ taskProjectFromRow: true }), v.validateTask({ create: false }), async (req, res, next) => {
   try {
     const t = await tasksRepo.update(req.params.id, req.body);
     if (!t) return res.status(404).json({ error: 'Task not found' });
     res.json(t);
   } catch (err) {
+    if (err.code === '23514') return res.status(400).json({ error: 'task dependencies must stay within one project' });
     next(err);
   }
 });

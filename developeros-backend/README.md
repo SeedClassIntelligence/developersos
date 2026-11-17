@@ -32,6 +32,7 @@ operations (upgrade, backup, restore drill, secret rotation, TLS) are in
 | `JWT_SECRET` | Session token signing secret. Required. |
 | `AUDIT_SIGNING_KEY` | Ed25519 private key (base64 PKCS#8 DER) that signs audit checkpoint receipts. Required in production. Lives only in the app environment, never in the database; **back it up with the database backups.** |
 | `NODE_ENV=production`, `HOST` | `HOST` defaults to `127.0.0.1` in production. The container image sets `HOST=0.0.0.0`. |
+| `DOCUMENT_STORAGE_DIR` | Where uploaded project documents are stored (`<organization>/<project>/<document>`). Required in production (uploads return 503 without it). Compose mounts the `documents` volume at `/app/data/documents`. **Back it up with the database** — `deploy/backup.sh` archives it. `DOCUMENT_MAX_BYTES` caps one upload (default 25 MB). |
 
 Production connects only to the database in its URLs. The embedded PostgreSQL
 engine (`embedded-postgres`, a devDependency) is a local dev/test convenience:
@@ -136,7 +137,11 @@ JWT_SECRET=<from scripts/generate-secrets.js>
 AUDIT_SIGNING_KEY=<from scripts/generate-secrets.js>
 FRONTEND_URL=https://developeros.example.com
 TRUST_PROXY=1
+DOCUMENT_STORAGE_DIR=/srv/developeros/documents
 ```
+
+Create `DOCUMENT_STORAGE_DIR` owned by the service user, and pass the same path
+as `BACKUP_DOCUMENTS_DIR` to `deploy/backup.sh`.
 
 Migrations run as a one-shot unit with the owner environment; the API unit
 gets only the runtime environment.

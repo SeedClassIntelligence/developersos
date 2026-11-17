@@ -77,6 +77,8 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:?set FRONTEND_URL (public https origin) in the env file}
       # reverse-proxy hops in front of the app (1 = one TLS proxy); empty if exposed directly
       TRUST_PROXY: ${TRUST_PROXY-1}
+      DOCUMENT_STORAGE_DIR: /app/data/documents
+      DOCUMENT_MAX_BYTES: ${DOCUMENT_MAX_BYTES:-26214400}
       RATE_LIMIT_API_MAX: ${RATE_LIMIT_API_MAX:-1000}
       RATE_LIMIT_AUTH_MAX: ${RATE_LIMIT_AUTH_MAX:-10}
       # Email (invitations, password reset). Enabled only when SMTP_HOST, MAIL_FROM and APP_BASE_URL are set;
@@ -92,6 +94,7 @@ services:
       - "${DEVOS_HTTP_BIND:-127.0.0.1}:${DEVOS_HTTP_PORT:-3000}:3000"
     volumes:
       - applogs:/app/logs
+      - documents:/app/data/documents
     depends_on:
       db:
         condition: service_healthy
@@ -107,3 +110,5 @@ networks:
 volumes:
   pgdata: {}
   applogs: {}
+  # Uploaded project documents. Back this up together with the database dump.
+  documents: {}

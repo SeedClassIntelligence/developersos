@@ -13,7 +13,10 @@
 #    runtime role against the restored copy: runtime-role guard, no pending
 #    migrations, runtime reads, and full audit-ledger verification using
 #    AUDIT_SIGNING_KEY / AUDIT_TRUSTED_PUBLIC_KEYS from the env file
-# 6. removes the container. Exit 0 only if every check passed.
+# 6. checks every stored document referenced by the restored database against
+#    the documents archive (<stem>.documents.tar): present, and SHA-256 equal
+#    to the hash recorded at upload
+# 7. removes the container. Exit 0 only if every check passed.
 #
 # Reads DEVOS_ENV_FILE (default deploy/.env.production) for POSTGRES_IMAGE,
 # POSTGRES_DB, POSTGRES_OWNER_USER, DEVOS_RUNTIME_USER, DEVOS_APP_IMAGE and the
@@ -103,6 +106,24 @@ else
 fi
 
 echo "[DRILL] schema_migrations in restored copy: $(printf '%s\n' "SELECT string_agg(version, ', ' ORDER BY version) FROM schema_migrations;" | "${PSQL[@]}")"
+
+echo "[DRILL] stored documents (database references vs archive):"
+DOCS_TAR="$STEM.documents.tar"
+REFS=$(printf '%s\n' "SELECT storage_key || E'\t' || sha256 FROM documents WHERE storage_key IS NOT NULL ORDER BY 1;" | "${PSQL[@]}")
+nrefs=$(printf '%s' "$REFS" | grep -c . || true)
+if [ "$nrefs" -eq 0 ]; then
+  echo "[DRILL] documents: no stored files referenced"
+elif [ ! -f "$DOCS_TAR" ]; then
+  echo "[DRILL] documents: $nrefs stored files referenced but $DOCS_TAR is missing" >&2; exit 1
+else
+  bad=0
+  while IFS=$'\t' read -r key sha; do
+    got=$(tar -xOf "$DOCS_TAR" "documents/$key" 2>/dev/null | sha256sum | cut -d' ' -f1 || true)
+    if [ "$got" != "$sha" ]; then echo "  MISSING/ALTERED documents/$key" >&2; bad=$((bad + 1)); fi
+  done <<< "$REFS"
+  [ "$bad" -eq 0 ] || { echo "[DRILL] documents: $bad of $nrefs files missing or altered" >&2; exit 1; }
+  echo "[DRILL] documents: all $nrefs stored files present with matching SHA-256"
+fi
 
 echo "[DRILL] verifying restored copy with $APP_IMAGE as runtime role \"$RUNTIME\""
 docker run --rm --network "container:$NAME" \

@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const permitsRepo = require('../db/repositories/permits.repo');
 const { requirePermission, authorizeResource, authorizeProjectParent } = require('../middleware/auth');
+const v = require('../middleware/execution-validation');
 
 // GET permits
 router.get('/', requirePermission('permits:read'), async (req, res, next) => {
@@ -30,7 +31,7 @@ router.get('/:id', requirePermission('permits:read'), authorizeResource('permit'
 });
 
 // CREATE permit
-router.post('/', requirePermission('permits:status:update'), authorizeProjectParent, async (req, res, next) => {
+router.post('/', requirePermission('permits:status:update'), authorizeProjectParent, v.validatePermit({ create: true }), async (req, res, next) => {
   try {
     const p = await permitsRepo.create(req.body);
     res.status(201).json(p);
@@ -40,7 +41,7 @@ router.post('/', requirePermission('permits:status:update'), authorizeProjectPar
 });
 
 // UPDATE permit
-router.put('/:id', requirePermission('permits:status:update'), authorizeResource('permit'), async (req, res, next) => {
+router.put('/:id', requirePermission('permits:status:update'), authorizeResource('permit'), v.validatePermit({ create: false }), async (req, res, next) => {
   try {
     const p = await permitsRepo.update(req.params.id, req.body);
     if (!p) return res.status(404).json({ error: 'Not found' });
@@ -51,7 +52,7 @@ router.put('/:id', requirePermission('permits:status:update'), authorizeResource
 });
 
 // PATCH permit status
-router.patch('/:id/status', requirePermission('permits:status:update'), authorizeResource('permit'), async (req, res, next) => {
+router.patch('/:id/status', requirePermission('permits:status:update'), authorizeResource('permit'), v.validatePermitStatus, async (req, res, next) => {
   try {
     const p = await permitsRepo.updateStatus(req.params.id, req.body.status);
     if (!p) return res.status(404).json({ error: 'Not found' });
@@ -62,7 +63,16 @@ router.patch('/:id/status', requirePermission('permits:status:update'), authoriz
 });
 
 // UPDATE correction item
-router.patch('/:id/corrections/:corrId', requirePermission('permits:corrections:update'), authorizeResource('permit'), async (req, res, next) => {
+// ADD correction item
+router.post('/:id/corrections', requirePermission('permits:corrections:update'), authorizeResource('permit'), v.validateCorrection({ create: true }), async (req, res, next) => {
+  try {
+    res.status(201).json(await permitsRepo.addCorrection(req.params.id, req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/:id/corrections/:corrId', requirePermission('permits:corrections:update'), authorizeResource('permit'), v.validateCorrection({ create: false }), async (req, res, next) => {
   try {
     const cor = await permitsRepo.updateCorrection(req.params.id, req.params.corrId, req.body);
     if (!cor) return res.status(404).json({ error: 'Correction not found' });

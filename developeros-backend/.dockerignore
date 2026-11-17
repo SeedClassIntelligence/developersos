@@ -19,3 +19,6 @@ scratch
 *.zip
 Dockerfile
 .dockerignore
+
+# Local document uploads (development/test)
+data

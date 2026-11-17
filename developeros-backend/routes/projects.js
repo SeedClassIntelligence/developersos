@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const projectsRepo = require('../db/repositories/projects.repo');
 const { requirePermission, authorizeResource } = require('../middleware/auth');
+const { validateProjectUpdate } = require('../middleware/execution-validation');
 
 // GET all projects
 router.get('/', requirePermission('projects:read'), async (req, res, next) => {
@@ -40,7 +41,7 @@ router.post('/', requirePermission('projects:create'), async (req, res, next) =>
 });
 
 // UPDATE project
-router.put('/:id', requirePermission('projects:update'), authorizeResource('project'), async (req, res, next) => {
+router.put('/:id', requirePermission('projects:update'), authorizeResource('project'), validateProjectUpdate, async (req, res, next) => {
   try {
     const p = await projectsRepo.update(req.params.id, req.body, req.organizationId);
     if (!p) return res.status(404).json({ error: 'Project not found' });

@@ -130,6 +130,16 @@ async function updateStatus(id, status) {
   return mapPermit(rows[0], corrRows);
 }
 
+async function addCorrection(permitId, data) {
+  const id = 'cor' + uuidv4().replace(/-/g, '');
+  const { rows } = await query(`
+    INSERT INTO permit_corrections (id, permit_id, text, status, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, NOW(), NOW())
+    RETURNING *
+  `, [id, permitId, data.text.trim(), data.status || 'not-started']);
+  return { id: rows[0].id, text: rows[0].text, status: rows[0].status };
+}
+
 async function updateCorrection(permitId, corrId, data) {
   const { rows: existing } = await query(
     'SELECT * FROM permit_corrections WHERE id = $1 AND permit_id = $2',
@@ -160,4 +170,5 @@ module.exports = {
   update,
   updateStatus,
   updateCorrection,
+  addCorrection,
 };

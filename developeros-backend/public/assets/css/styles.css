@@ -464,3 +464,24 @@ textarea.input{resize:vertical;line-height:1.5}
 .copy-value{background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:6px 8px;word-break:break-all;flex:1;min-width:240px}
 a.auth-foot{color:var(--mu);text-decoration:none}
 a.auth-foot:hover{color:var(--gold)}
+/* WP7 — execution editing */
+.proj-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.status-switch{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.dep-list{border:1px solid var(--bd);border-radius:8px;padding:8px 12px;max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.dep-item{font-size:12px;color:var(--off);display:flex;gap:8px;align-items:center}
+.add-card summary{cursor:pointer;list-style:none;margin-bottom:0}
+.add-card[open] summary{margin-bottom:12px}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.inline-add{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.inline-add .grow{flex:1;min-width:160px}
+.inline-add .form-error{flex-basis:100%}
+.source-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;padding:8px 0;border-bottom:1px solid var(--bd)}
+@media(max-width:900px){.source-row{grid-template-columns:1fr 1fr}}
+.source-remove{margin-bottom:2px}
+.new-channel{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap}
+.new-channel .input{width:130px}
+.msg-input-area{border-top:1px solid var(--bd);padding:12px 16px}
+.msg-input-row{display:flex;gap:8px;align-items:flex-end}
+.msg-input-row .grow{flex:1}
+.msg-input-row textarea{width:100%}
+.dep-list legend.lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:500;padding:0 4px}

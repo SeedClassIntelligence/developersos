@@ -89,8 +89,10 @@ async function save(projectId, data) {
 
     if (Array.isArray(data.sources)) {
       await client.query('DELETE FROM capital_sources WHERE capital_stack_id = $1', [stackRow.id]);
-      for (const s of data.sources) {
-        const srcId = s.id || ('cap' + uuidv4().replace(/-/g, ''));
+      // Sources are listed ORDER BY id: ids that sort by position keep the order they were entered in.
+      const batch = `cap-${Date.now().toString(36)}-${uuidv4().slice(0, 6)}`;
+      for (const [i, s] of data.sources.entries()) {
+        const srcId = s.id || `${batch}-${String(i).padStart(3, '0')}`;
         await client.query(`
           INSERT INTO capital_sources (id, capital_stack_id, name, type, amount, pct, status, color, deadline, alert)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

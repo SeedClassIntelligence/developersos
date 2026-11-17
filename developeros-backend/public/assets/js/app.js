@@ -5,7 +5,7 @@
 (function (global) {
   const Pages = global.Pages;
   let renderSeq = 0;
-  let restored = false;
+  let restoring = null;
   let intendedPath = null;
 
   // Public routes
@@ -19,6 +19,7 @@
   Router.add('/team', { name: 'team', page: Pages.team });
   Router.add('/platform', { name: 'platform', page: Pages.platform });
   Router.add('/audit', { name: 'audit', page: Pages.audit });
+  Router.add('/partners', { name: 'partners', page: Pages.partners });
   // Development Intelligence (fixed paths before parameterised ones)
   Router.add('/intelligence/opportunities', { name: 'opportunities', page: Pages.opportunities, area: 'opportunities' });
   Router.add('/intelligence/opportunities/new', { name: 'opportunity-new', page: Pages.opportunityNew, area: 'opportunities' });
@@ -43,13 +44,12 @@
     const { path, query } = Router.current();
     const routeKey = location.hash.replace(/^#/, '') || '/';
 
-    // Restore a stored session once per page load before routing.
-    if (!restored) {
-      restored = true;
-      if (Api.hasToken()) {
-        try { await Session.load(); } catch (err) { Session.clear(); }
-      }
+    // Restore a stored session once per page load; every render waits for the same restore.
+    if (!restoring) {
+      restoring = Api.hasToken() ? Session.load().catch(() => Session.clear()) : Promise.resolve();
     }
+    await restoring;
+    if (seq !== renderSeq) return; // a newer navigation started while restoring
 
     const matched = Router.match(path);
     if (!matched) return Router.replace(Session.signedIn ? '/portfolio' : '/login');
@@ -64,9 +64,10 @@
     const ctx = { route, params, query, project: null };
 
     if (route.public) {
+      const view = await route.page.render(ctx);
+      if (seq !== renderSeq) return; // a newer navigation won (e.g. sign-out, then an invitation link)
       showShell(false);
-      const root = document.getElementById('auth-root');
-      mount(root, await route.page.render(ctx));
+      mount(document.getElementById('auth-root'), view);
       if (route.page.after) route.page.after(ctx);
       return;
     }

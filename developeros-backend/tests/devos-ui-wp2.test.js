@@ -231,7 +231,7 @@ async function runAccessSuite() {
 
   // ── Browser ──────────────────────────────────
   let browser;
-  try { browser = await require('playwright').chromium.launch(); } catch (err) {
+  try { browser = await require('./browser').launchChromium(); } catch (err) {
     results.push({ id: 'DEVOS-ACC-BROWSER', title: 'Headless Chromium available', passed: false, detail: err.message.split('\n')[0] });
     console.log(`  [FAIL] DEVOS-ACC-BROWSER — ${err.message.split('\n')[0]}`);
   }
